@@ -4,7 +4,9 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import React, { FormEventHandler } from 'react';
+import axios from 'axios';
+import { escape } from 'querystring';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -22,6 +24,31 @@ export default function Register() {
         post(route('register'), {
             onSuccess: () => reset('password', 'password_confirmation'),
         });
+    };
+
+    const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const zipcode = e.target.value;
+        if (/^\d{7}$/.test(zipcode)) {
+            try {
+                const response = await axios.get('/api/zipcode/search', {
+                    params: { zipcode },
+                });
+
+                if (response.data.results?.length > 0) {
+                    const result = response.data.results[0];
+                    setData('address', `${result.address1}${result.address2}${result.address3}`);
+                } else {
+                    console.error('住所が見つかりませんでした。');
+                }
+            } catch (error) {
+                console.error('郵便番号検索に失敗しました。', error);
+            }
+        }
+    };
+
+    const handleCombineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setData('zipcode', e.target.value);
+        handleZipcodeChange(e);
     };
 
     return (
@@ -55,7 +82,7 @@ export default function Register() {
                         value={data.zipcode}
                         className="mt-1 block w-full"
                         autoComplete="zipcode"
-                        onChange={(e) => setData('zipcode', e.target.value)}
+                        onChange={(e) => handleCombineChange(e)}
                         required
                     />
 
