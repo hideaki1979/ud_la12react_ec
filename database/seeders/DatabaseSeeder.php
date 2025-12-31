@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'zipcode' => '1000000',
+            'address' => '東京都豊島区東池袋'
         ]);
     }
 }

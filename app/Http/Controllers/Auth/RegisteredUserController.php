@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'zipcode' => ['required', 'string', 'min:7', 'max:7'],
+            'zipcode' => ['required', 'string', 'digits:7'],
             'address' => ['required', 'string', 'min:3', 'max:255'],
         ]);
 
