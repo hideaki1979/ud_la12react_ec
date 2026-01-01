@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
@@ -17,9 +18,6 @@ export default function UpdateProfileInformation({
     className?: string;
 }) {
     const user = usePage().props.auth.user;
-    // useStateを追加して、ローカルエラーを管理
-    const [zipcodeError, setZipcodeError] = useState<string>('');
-
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
@@ -29,38 +27,15 @@ export default function UpdateProfileInformation({
             address: user.address,
         });
 
+    const { handleZipcodeChange, error: zipcodeError } = useZipcodeSearch({
+        onAddressFound: (address) => setData('address', address),
+        onZipcodeChange: (zipcode) => setData('zipcode', zipcode),
+    });
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
         patch(route('profile.update'));
-    };
-
-    const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const zipcode = e.target.value;
-        setData('zipcode', zipcode);
-        setZipcodeError('');
-
-        if (/^\d{7}$/.test(zipcode)) {
-            try {
-                const response = await axios.get('/api/zipcode/search', {
-                    params: { zipcode },
-                });
-
-                if (response.data.results?.length > 0) {
-                    const result = response.data.results[0];
-                    setData('address', `${result.address1}${result.address2}${result.address3}`);
-                } else {
-                    setZipcodeError('住所が見つかりませんでした。');
-                }
-            } catch (error) {
-                console.error('郵便番号検索に失敗しました。', error);
-                if (axios.isAxiosError(error) && error.response?.data.message) {
-                    setZipcodeError(error.response.data.message);
-                } else {
-                    setZipcodeError('郵便番号検索に失敗しました');
-                }
-            }
-        }
     };
 
     return (
@@ -92,7 +67,7 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={errors.name} />
                 </div>
 
-                <div className='mt-4'>
+                <div>
                     <InputLabel htmlFor="zipcode" value="Zipcode" />
 
                     <TextInput
@@ -100,7 +75,7 @@ export default function UpdateProfileInformation({
                         name="zipcode"
                         value={data.zipcode}
                         className="mt-1 block w-full"
-                        autoComplete="zipcode"
+                        autoComplete="postal-code"
                         onChange={(e) => handleZipcodeChange(e)}
                         required
                     />
@@ -109,7 +84,7 @@ export default function UpdateProfileInformation({
 
                 </div>
 
-                <div className='mt-4'>
+                <div>
                     <InputLabel htmlFor="address" value="Address" />
 
                     <TextInput
@@ -117,7 +92,7 @@ export default function UpdateProfileInformation({
                         name="address"
                         value={data.address}
                         className="mt-1 block w-full"
-                        autoComplete="address"
+                        autoComplete="street-address"
                         onChange={(e) => setData('address', e.target.value)}
                         required
                     />

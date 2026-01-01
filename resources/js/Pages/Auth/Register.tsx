@@ -6,10 +6,10 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import React, { FormEventHandler, useState } from 'react';
 import axios from 'axios';
+import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 
 export default function Register() {
     // useStateを追加して、ローカルエラーを管理
-    const [zipcodeError, setZipcodeError] = useState<string>('');
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -19,40 +19,17 @@ export default function Register() {
         address: '',
     });
 
+    const { handleZipcodeChange, error: zipcodeError } = useZipcodeSearch({
+        onAddressFound: (address) => setData('address', address),
+        onZipcodeChange: (zipcode) => setData('zipcode', zipcode),
+    });
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
         post(route('register'), {
             onSuccess: () => reset('password', 'password_confirmation'),
         });
-    };
-
-    const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const zipcode = e.target.value;
-        setData('zipcode', zipcode);
-        setZipcodeError('');
-
-        if (/^\d{7}$/.test(zipcode)) {
-            try {
-                const response = await axios.get('/api/zipcode/search', {
-                    params: { zipcode },
-                });
-
-                if (response.data.results?.length > 0) {
-                    const result = response.data.results[0];
-                    setData('address', `${result.address1}${result.address2}${result.address3}`);
-                } else {
-                    setZipcodeError('住所が見つかりませんでした。');
-                }
-            } catch (error) {
-                console.error('郵便番号検索に失敗しました。', error);
-                if (axios.isAxiosError(error) && error.response?.data.message) {
-                    setZipcodeError(error.response.data.message);
-                } else {
-                    setZipcodeError('郵便番号検索に失敗しました');
-                }
-            }
-        }
     };
 
     return (
@@ -84,7 +61,7 @@ export default function Register() {
                         name="zipcode"
                         value={data.zipcode}
                         className="mt-1 block w-full"
-                        autoComplete="zipcode"
+                        autoComplete="postal-code"
                         onChange={(e) => handleZipcodeChange(e)}
                         required
                     />
