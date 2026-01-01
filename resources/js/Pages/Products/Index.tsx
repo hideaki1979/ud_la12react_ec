@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import GuestProductLayout from '@/Layouts/GuestProductLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
+import DOMPurify from 'dompurify';
 
 interface Product {
     id: number;
@@ -86,7 +87,7 @@ export default function Products({ products }: ProductsProps) {
                                             ? 'bg-indigo-500 text-white'
                                             : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
                                             } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}   // HTMLエンティティをレンダリング
+                                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(link.label) }}   // HTMLエンティティをレンダリング
                                     />
                                 ))}
                             </div>
