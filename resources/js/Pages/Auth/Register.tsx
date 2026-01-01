@@ -4,11 +4,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import React, { FormEventHandler } from 'react';
+import React, { FormEventHandler, useState } from 'react';
 import axios from 'axios';
-import { escape } from 'querystring';
 
 export default function Register() {
+    // useStateを追加して、ローカルエラーを管理
+    const [zipcodeError, setZipcodeError] = useState<string>('');
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -28,6 +29,9 @@ export default function Register() {
 
     const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const zipcode = e.target.value;
+        setData('zipcode', zipcode);
+        setZipcodeError('');
+
         if (/^\d{7}$/.test(zipcode)) {
             try {
                 const response = await axios.get('/api/zipcode/search', {
@@ -38,23 +42,18 @@ export default function Register() {
                     const result = response.data.results[0];
                     setData('address', `${result.address1}${result.address2}${result.address3}`);
                 } else {
-                    console.error('住所が見つかりませんでした。');
+                    setZipcodeError('住所が見つかりませんでした。');
                 }
             } catch (error) {
                 console.error('郵便番号検索に失敗しました。', error);
+                setZipcodeError('郵便番号検索に失敗しました');
             }
         }
-    };
-
-    const handleCombineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setData('zipcode', e.target.value);
-        handleZipcodeChange(e);
     };
 
     return (
         <GuestLayout>
             <Head title="Register" />
-
             <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="name" value="Name" />
@@ -82,11 +81,13 @@ export default function Register() {
                         value={data.zipcode}
                         className="mt-1 block w-full"
                         autoComplete="zipcode"
-                        onChange={(e) => handleCombineChange(e)}
+                        onChange={(e) => handleZipcodeChange(e)}
                         required
                     />
 
                     <InputError message={errors.zipcode} className="mt-2" />
+                    <InputError message={zipcodeError || errors.zipcode} className='mt-2' />
+
                 </div>
 
                 <div className='mt-4'>
