@@ -4,8 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import React, { FormEventHandler, useState } from 'react';
-import axios from 'axios';
+import { FormEventHandler } from 'react';
 import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 
 export default function Register() {
