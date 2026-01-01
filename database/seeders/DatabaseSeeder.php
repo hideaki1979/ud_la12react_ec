@@ -23,5 +23,9 @@ class DatabaseSeeder extends Seeder
             'zipcode' => '1000000',
             'address' => '東京都豊島区東池袋'
         ]);
+
+        $this->call([
+            ProductSeeder::class,
+        ]);
     }
 }

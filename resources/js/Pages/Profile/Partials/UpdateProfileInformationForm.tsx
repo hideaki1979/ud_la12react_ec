@@ -5,7 +5,6 @@ import TextInput from '@/Components/TextInput';
 import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import axios from 'axios';
 import { FormEventHandler, useState } from 'react';
 
 export default function UpdateProfileInformation({
