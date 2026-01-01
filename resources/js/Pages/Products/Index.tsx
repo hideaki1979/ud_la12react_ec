@@ -78,9 +78,9 @@ export default function Products({ products }: ProductsProps) {
 
                             {/* ページネーションリンクの追加 */}
                             <div className='flex justify-center mt-4'>
-                                {products.links.map((link) => (
+                                {products.links.map((link, index) => (
                                     <Link
-                                        key={link.url}
+                                        key={index}
                                         href={link.url || '#'}  // urlがnullの場合は無効なリンクとして扱う
                                         className={`px-4 py-2 mx-1 rounded-md ${link.active
                                             ? 'bg-indigo-500 text-white'
