@@ -4,9 +4,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import React, { FormEventHandler, useState } from 'react';
+import axios from 'axios';
+import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 
 export default function Register() {
+    // useStateを追加して、ローカルエラーを管理
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -14,6 +17,11 @@ export default function Register() {
         password_confirmation: '',
         zipcode: '',
         address: '',
+    });
+
+    const { handleZipcodeChange, error: zipcodeError } = useZipcodeSearch({
+        onAddressFound: (address) => setData('address', address),
+        onZipcodeChange: (zipcode) => setData('zipcode', zipcode),
     });
 
     const submit: FormEventHandler = (e) => {
@@ -27,7 +35,6 @@ export default function Register() {
     return (
         <GuestLayout>
             <Head title="Register" />
-
             <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="name" value="Name" />
@@ -54,12 +61,13 @@ export default function Register() {
                         name="zipcode"
                         value={data.zipcode}
                         className="mt-1 block w-full"
-                        autoComplete="zipcode"
-                        onChange={(e) => setData('zipcode', e.target.value)}
+                        autoComplete="postal-code"
+                        onChange={(e) => handleZipcodeChange(e)}
                         required
                     />
 
-                    <InputError message={errors.zipcode} className="mt-2" />
+                    <InputError message={zipcodeError || errors.zipcode} className='mt-2' />
+
                 </div>
 
                 <div className='mt-4'>

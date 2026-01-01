@@ -2,9 +2,11 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { useZipcodeSearch } from '@/Hooks/useZipcodeSearch';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import axios from 'axios';
+import { FormEventHandler, useState } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -21,7 +23,14 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            zipcode: user.zipcode ?? '',
+            address: user.address ?? '',
         });
+
+    const { handleZipcodeChange, error: zipcodeError } = useZipcodeSearch({
+        onAddressFound: (address) => setData('address', address),
+        onZipcodeChange: (zipcode) => setData('zipcode', zipcode),
+    });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -56,6 +65,39 @@ export default function UpdateProfileInformation({
                     />
 
                     <InputError className="mt-2" message={errors.name} />
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="zipcode" value="Zipcode" />
+
+                    <TextInput
+                        id="zipcode"
+                        name="zipcode"
+                        value={data.zipcode}
+                        className="mt-1 block w-full"
+                        autoComplete="postal-code"
+                        onChange={(e) => handleZipcodeChange(e)}
+                        required
+                    />
+
+                    <InputError message={zipcodeError || errors.zipcode} className='mt-2' />
+
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="address" value="Address" />
+
+                    <TextInput
+                        id="address"
+                        name="address"
+                        value={data.address}
+                        className="mt-1 block w-full"
+                        autoComplete="street-address"
+                        onChange={(e) => setData('address', e.target.value)}
+                        required
+                    />
+
+                    <InputError message={errors.address} className="mt-2" />
                 </div>
 
                 <div>
