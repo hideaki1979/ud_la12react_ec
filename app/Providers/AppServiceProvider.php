@@ -26,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
             'successMessage' => function () {
                 return session('success');
             },
+            'errorMessage' => function () {
+                return session('error');
+            },
             'cartInfo' => function () {
                 return session('cart', []);
             },

@@ -39,24 +39,20 @@ interface CartItem {
 interface ProductsProps {
     products: PaginatedProducts;
     successMessage?: string;
+    errorMessage?: string;
     cartInfo?: { [id: number]: CartItem };    // idをキーとしたCartItemのオブジェクト
 }
 
-export default function Products({ products, successMessage, cartInfo }: ProductsProps) {
+export default function Products({ products, successMessage, errorMessage, cartInfo }: ProductsProps) {
     const { auth } = usePage().props;
     const Layout = auth.user ? AuthenticatedLayout : GuestProductLayout;
-    const form = useForm<{ id: number }>({
-        id: 0,
-    });
+    const form = useForm({});
 
     const addToCart = (id: number) => {
         form.post(route('products.add', id), {
             onError: () => alert('カートへの追加に失敗しました。'),
         });
     };
-
-    console.log(cartInfo);
-    console.log(Object.entries(cartInfo || ''));
 
     return (
         <Layout
@@ -106,6 +102,11 @@ export default function Products({ products, successMessage, cartInfo }: Product
                                 {successMessage}
                             </div>
                         )}
+                        {errorMessage && (
+                            <div className='bg-red-100 border border-red-400 text-red-800 p-4 rounded m-2'>
+                                {errorMessage}
+                            </div>
+                        )}
                         <div className="p-6 text-gray-900">
                             商品一覧
                         </div>
@@ -127,12 +128,13 @@ export default function Products({ products, successMessage, cartInfo }: Product
                                             <div className='text-blue-700 text-2xl'>{product.name}</div>
                                             <div className='text-teal-700'>{product.code}</div>
                                             <div className='text-3xl'>¥{product.price}</div>
-                                            <div
-                                                className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold'
+                                            <button
+                                                type='button'
+                                                className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold cursor-pointer'
                                                 onClick={() => addToCart(product.id)}
                                             >
                                                 カートに入れる
-                                            </div>
+                                            </button>
                                         </div>
                                     )
                                 })}

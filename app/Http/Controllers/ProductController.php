@@ -17,9 +17,14 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', ['products' => $products]);
     }
 
-    public function addToCart($id)
+    public function addToCart(int $id)
     {
         $product = Product::findOrFail($id);
+
+        if ($product->active) {
+            return redirect()->route('products.index')->with('error', 'この商品は現在購入出来ません。');
+        }
+
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
