@@ -23,13 +23,13 @@ export default function GuestProductLayout({
                         <div className="flex items-center gap-x-4">
                             <Link
                                 href={route('login')}
-                                className='text-sm text-gray-500 hover:text-gray-700'
+                                className="text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Log In
                             </Link>
                             <Link
                                 href={route('register')}
-                                className='text-sm text-gray-500 hover:text-gray-700'
+                                className="text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Register
                             </Link>
