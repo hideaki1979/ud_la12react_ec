@@ -15,10 +15,6 @@ class ZipcodeController extends Controller
                 'zipcode' => $validated['zipcode'],
             ]);
 
-            if ($response->failed()) {
-                return response()->json(['error' => '郵便番号の検索に失敗しました。'], 500);
-            }
-
             $response->throw();
 
             return $response->json();
@@ -29,6 +25,7 @@ class ZipcodeController extends Controller
             \Illuminate\Support\Facades\Log::error('Zipcode API request error', ['status' => $e->response->status(), 'body' => $e->response->body()]);
             return response()->json(['message' => '住所の検索に失敗しました。'], $e->response->status());
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Unexpected error in zipcode search', ['error' => $e->getMessage()]);
             return response()->json(['error' => '郵便番号の検索に失敗しました。'], 500);
         }
     }

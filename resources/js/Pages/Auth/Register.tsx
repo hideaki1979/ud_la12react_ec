@@ -46,7 +46,11 @@ export default function Register() {
                 }
             } catch (error) {
                 console.error('郵便番号検索に失敗しました。', error);
-                setZipcodeError('郵便番号検索に失敗しました');
+                if (axios.isAxiosError(error) && error.response?.data.message) {
+                    setZipcodeError(error.response.data.message);
+                } else {
+                    setZipcodeError('郵便番号検索に失敗しました');
+                }
             }
         }
     };
@@ -85,7 +89,6 @@ export default function Register() {
                         required
                     />
 
-                    <InputError message={errors.zipcode} className="mt-2" />
                     <InputError message={zipcodeError || errors.zipcode} className='mt-2' />
 
                 </div>
