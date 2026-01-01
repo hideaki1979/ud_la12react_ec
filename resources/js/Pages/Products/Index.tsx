@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import GuestProductLayout from '@/Layouts/GuestProductLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 
 interface Product {
@@ -28,13 +28,32 @@ interface PaginatedProducts {
     total: number;
 }
 
-interface ProductsProps {
-    products: PaginatedProducts;
+interface CartItem {
+    name: string;
+    price: number;
+    code: string;
+    img: string;
+    quantity: number;
 }
 
-export default function Products({ products }: ProductsProps) {
+interface ProductsProps {
+    products: PaginatedProducts;
+    successMessage?: string;
+    errorMessage?: string;
+    cartInfo?: { [id: number]: CartItem };    // idをキーとしたCartItemのオブジェクト
+}
+
+export default function Products({ products, successMessage, errorMessage, cartInfo }: ProductsProps) {
     const { auth } = usePage().props;
     const Layout = auth.user ? AuthenticatedLayout : GuestProductLayout;
+    const form = useForm({});
+
+    const addToCart = (id: number) => {
+        form.post(route('products.add', id), {
+            onError: () => alert('カートへの追加に失敗しました。'),
+        });
+    };
+
     return (
         <Layout
             header={
@@ -47,7 +66,47 @@ export default function Products({ products }: ProductsProps) {
 
             <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg p-2">
+                        <div>
+                            {/* カートの中身をUIに表示する例 */}
+                            {cartInfo && Object.keys(cartInfo).length > 0 ? (
+                                <div>
+                                    <h3>カートの中身：</h3>
+                                    <ul>
+                                        {Object.entries(cartInfo).map(([id, item]) => (
+                                            <li key={id} className='p-3 border-b'>
+                                                <div className='flex items-center'>
+                                                    <img
+                                                        src={`/storage/img/${item.img}`}
+                                                        alt={item.name}
+                                                        className='w-16 h-16 object-cover mr-4'
+                                                    />
+                                                    <div>
+                                                        <p className='font-bold'>{item.name}</p>
+                                                        <p>コード：{item.code}</p>
+                                                        <p>価格：{item.price}円</p>
+                                                        <p>数量：{item.quantity}個</p>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <p className='p-2'>カートは空です。</p>
+                            )}
+                        </div>
+                        {/* メッセージの表示 */}
+                        {successMessage && (
+                            <div className='bg-green-100 border border-green-400 text-green-800 p-4 rounded m-2'>
+                                {successMessage}
+                            </div>
+                        )}
+                        {errorMessage && (
+                            <div className='bg-red-100 border border-red-400 text-red-800 p-4 rounded m-2'>
+                                {errorMessage}
+                            </div>
+                        )}
                         <div className="p-6 text-gray-900">
                             商品一覧
                         </div>
@@ -69,9 +128,13 @@ export default function Products({ products }: ProductsProps) {
                                             <div className='text-blue-700 text-2xl'>{product.name}</div>
                                             <div className='text-teal-700'>{product.code}</div>
                                             <div className='text-3xl'>¥{product.price}</div>
-                                            <div className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold'>
+                                            <button
+                                                type='button'
+                                                className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold cursor-pointer'
+                                                onClick={() => addToCart(product.id)}
+                                            >
                                                 カートに入れる
-                                            </div>
+                                            </button>
                                         </div>
                                     )
                                 })}
