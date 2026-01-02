@@ -1,32 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
-
-interface CartItem {
-    name: string;
-    price: number;
-    code: string;
-    img: string;
-    quantity: number;
-}
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    zipcode: string;
-    address: string;
-}
+import { CartItem, User } from '@/types';
+import { Head, router } from '@inertiajs/react';
 
 interface Step1Props {
-    user: User; // ログインユーザー情報
-    cartInfo?: { [id: string]: CartItem };    // idをキーとしたCartItemのオブジェクト
-    totalPrice?: number;    // 合計金額
+    user: User;
+    cartInfo?: { [id: string]: CartItem };
+    totalPrice?: number;
 }
 
 export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
-    const handlePaymentMethid = (method: 'cash_on_delivery' | 'stripe') => {
-        console.log(method);
+    const handlePaymentMethod = (method: 'cash_on_delivery' | 'stripe') => {
         router.post('/checkout/confirm', { method });
     };
 
@@ -48,7 +31,13 @@ export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
                                 {user.name}さん、決済方法を選択してください。
                             </p>
                             <button
-                                onClick={() => handlePaymentMethid('stripe')}
+                                onClick={() => handlePaymentMethod('cash_on_delivery')}
+                                className='bg-indigo-500 text-white font-semibold p-4 w-64 rounded-md hover:bg-indigo-400'
+                            >
+                                代引き決済
+                            </button>
+                            <button
+                                onClick={() => handlePaymentMethod('stripe')}
                                 className='bg-green-500 text-white font-semibold p-4 w-64 rounded-md hover:bg-green-400'
                             >
                                 Stripe決済
@@ -87,7 +76,7 @@ export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
                             ) : null}
 
                             <button
-                                onClick={() => window.location.href = '/products'}
+                                onClick={() => router.visit('/products')}
                                 className='bg-gray-500 text-white font-semibold p-4 w-64 rounded-md hover:bg-gray-400 mt-4'
                             >
                                 商品一覧に戻る

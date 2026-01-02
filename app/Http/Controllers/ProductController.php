@@ -5,20 +5,32 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    /**
+     * カート情報と合計金額を取得
+     *
+     * @return array{cart: array, totalPrice: int|float}
+     */
+    private function getCartWithTotal(): array
+    {
+        $cart = session()->get('cart', []);
+        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        return compact('cart', 'totalPrice');
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $products = Product::paginate(15);
+        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
-        // 合計金額を計算
-        $cart = session()->get('cart', []);
-        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
         return Inertia::render(
             'Products/Index',
             ['products' => $products, 'totalPrice' => $totalPrice]
@@ -94,27 +106,33 @@ class ProductController extends Controller
 
     public function step1()
     {
-        // ユーザーがログインしていることを確認
         $user = Auth::user();
-        $cart = session()->get('cart', []);
-        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
-        // Inertiaを使用してビューにデータを渡す
         return inertia('Checkout/Step1', [
-            'user' => $user,    // ログインユーザー情報
+            'user' => $user,
             'totalPrice' => $totalPrice
         ]);
     }
 
     public function confirm(Request $request)
     {
-        $method = $request->input('method');
+        $validated = $request->validate([
+            'method' => ['required', 'string', Rule::in(['cash_on_delivery', 'stripe'])],
+        ]);
+
+        $cart = session()->get('cart', []);
+        if (empty($cart)) {
+            return redirect()->route('products.index')->with('error', 'カートが空です。');
+        }
+
+        $method = $validated['method'];
         session()->put('selectedPaymentMethod', $method);
 
         if ($method === 'cash_on_delivery') {
-            return redirect('/checkout/cash-on-delivery');
+            return redirect()->route('checkout.cash-on-delivery');
         } elseif ($method === 'stripe') {
-            return redirect('/checkout/stripe');
+            return redirect()->route('checkout.stripe');
         }
 
         return back();
@@ -122,9 +140,13 @@ class ProductController extends Controller
 
     public function cashOnDelivery()
     {
+        $selectedMethod = session('selectedPaymentMethod');
+        if ($selectedMethod !== 'cash_on_delivery') {
+            return redirect()->route('checkout.step1')->with('error', '不正なアクセスです。');
+        }
+
         $user = Auth::user();
-        $cart = session()->get('cart', []);
-        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
         return Inertia::render('Checkout/CashOnDelivery', [
             'user' => $user,

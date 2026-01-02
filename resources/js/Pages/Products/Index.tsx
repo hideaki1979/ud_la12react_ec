@@ -244,7 +244,7 @@ export default function Products({ products, successMessage, errorMessage, cartI
                             <div className='text-center'>
                                 <button
                                     onClick={() => checkout()}
-                                    className='pointer-events-auto rounded-md bg-indigo-500 p-2 font-semibold text-white hover:bg-indigo-400 w-2/3 text-center"'
+                                    className='pointer-events-auto rounded-md bg-indigo-500 p-2 font-semibold text-white hover:bg-indigo-400 w-2/3 text-center'
                                 >
                                     決済する
                                 </button>

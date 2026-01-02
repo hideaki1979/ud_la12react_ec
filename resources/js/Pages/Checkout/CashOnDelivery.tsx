@@ -1,26 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { CartItem, User } from '@/types';
 import { Head } from '@inertiajs/react';
 
-interface CartItem {
-    name: string;
-    price: number;
-    code: string;
-    img: string;
-    quantity: number;
-}
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    zipcode: string;
-    address: string;
-}
-
 interface CashOnDeliveryProps {
-    user: User; // ログインユーザー情報
-    cartInfo?: { [id: string]: CartItem };    // idをキーとしたCartItemのオブジェクト
-    totalPrice?: number;    // 合計金額
+    user: User;
+    cartInfo?: { [id: string]: CartItem };
+    totalPrice?: number;
     selectedPaymentMethodInfo: string;
 }
 
@@ -33,7 +18,7 @@ export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPay
                 </h2>
             }
         >
-            <Head title="決済方法選択" />
+            <Head title="ご注文の確認" />
 
             <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -51,7 +36,9 @@ export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPay
                             決済方法：
                             {selectedPaymentMethodInfo === 'cash_on_delivery'
                                 ? '代引き決済'
-                                : 'Stripe決済'}
+                                : selectedPaymentMethodInfo === 'stripe'
+                                    ? 'Stripe決済'
+                                    : ''}
                         </p>
                         <p className='text-lg'>
                             配送先　〒{user.zipcode} {user.address}
