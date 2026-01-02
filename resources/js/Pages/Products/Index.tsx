@@ -4,7 +4,6 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
 import { useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 
@@ -193,7 +192,7 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                                     <button
                                                         type='button'
                                                         onClick={() => addCartPlus(Number(id))}
-                                                        className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 ext-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
+                                                        className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 text-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
                                                     >
                                                         +
                                                     </button>
@@ -202,7 +201,7 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                                         <button
                                                             type='button'
                                                             onClick={() => cartMinus(Number(id))}
-                                                            className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 ext-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
+                                                            className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 text-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
                                                         >
                                                             -
                                                         </button>

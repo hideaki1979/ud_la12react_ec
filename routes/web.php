@@ -27,8 +27,8 @@ Route::middleware('auth')->group(function () {
 
 Route::get('products', [ProductController::class, 'index'])->name('products.index');
 Route::post('/products/add/{id}', [ProductController::class, 'addToCart'])->name('products.add')->where('id', '[0-9]+');
-Route::post('/products/plus/{id}', [ProductController::class, 'addCartPlus'])->name('products.plus');
-Route::post('/products/minus/{id}', [ProductController::class, 'cartMinus'])->name('products.minus');
-Route::post('/products/remove/{id}', [ProductController::class, 'removeCart'])->name('products.remove');
+Route::post('/products/plus/{id}', [ProductController::class, 'addCartPlus'])->name('products.plus')->where('id', '[0-9]+');
+Route::post('/products/minus/{id}', [ProductController::class, 'cartMinus'])->name('products.minus')->where('id', '[0-9]+');
+Route::post('/products/remove/{id}', [ProductController::class, 'removeCart'])->name('products.remove')->where('id', '[0-9]+');
 
 require __DIR__ . '/auth.php';
