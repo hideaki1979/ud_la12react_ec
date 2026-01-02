@@ -2,6 +2,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import GuestProductLayout from '@/Layouts/GuestProductLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
+import Modal from '@/Components/Modal';
+import SecondaryButton from '@/Components/SecondaryButton';
+import DangerButton from '@/Components/DangerButton';
+import { useState } from 'react';
+import PrimaryButton from '@/Components/PrimaryButton';
+
 
 interface Product {
     id: number;
@@ -45,12 +51,39 @@ interface ProductsProps {
 
 export default function Products({ products, successMessage, errorMessage, cartInfo }: ProductsProps) {
     const { auth } = usePage().props;
+    const [showModal, setShowModal] = useState(false);
     const Layout = auth.user ? AuthenticatedLayout : GuestProductLayout;
     const form = useForm({});
+
+    const openModal = () => {
+        setShowModal(true);
+    }
+
+    const closeModal = () => {
+        setShowModal(false);
+    }
 
     const addToCart = (id: number) => {
         form.post(route('products.add', id), {
             onError: () => alert('カートへの追加に失敗しました。'),
+        });
+    };
+
+    const addCartPlus = (id: number) => {
+        form.post(route('products.plus', id), {
+            onError: () => alert('数量を増やすことに失敗しました。'),
+        });
+    };
+
+    const cartMinus = (id: number) => {
+        form.post(route('products.minus', id), {
+            onError: () => alert('数量を減らすことに失敗しました。'),
+        });
+    };
+
+    const removeCart = (id: number) => {
+        form.post(route('products.remove', id), {
+            onError: () => alert('カートからの削除に失敗しました。'),
         });
     };
 
@@ -67,35 +100,6 @@ export default function Products({ products, successMessage, errorMessage, cartI
             <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg p-2">
-                        <div>
-                            {/* カートの中身をUIに表示する例 */}
-                            {cartInfo && Object.keys(cartInfo).length > 0 ? (
-                                <div>
-                                    <h3>カートの中身：</h3>
-                                    <ul>
-                                        {Object.entries(cartInfo).map(([id, item]) => (
-                                            <li key={id} className='p-3 border-b'>
-                                                <div className='flex items-center'>
-                                                    <img
-                                                        src={`/storage/img/${item.img}`}
-                                                        alt={item.name}
-                                                        className='w-16 h-16 object-cover mr-4'
-                                                    />
-                                                    <div>
-                                                        <p className='font-bold'>{item.name}</p>
-                                                        <p>コード：{item.code}</p>
-                                                        <p>価格：{item.price}円</p>
-                                                        <p>数量：{item.quantity}個</p>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ) : (
-                                <p className='p-2'>カートは空です。</p>
-                            )}
-                        </div>
                         {/* メッセージの表示 */}
                         {successMessage && (
                             <div className='bg-green-100 border border-green-400 text-green-800 p-4 rounded m-2'>
@@ -107,8 +111,11 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                 {errorMessage}
                             </div>
                         )}
-                        <div className="p-6 text-gray-900">
-                            商品一覧
+                        <div className="p-4 text-gray-900">
+                            <span className='mr-6'>商品一覧</span>
+                            <PrimaryButton onClick={openModal}>
+                                カート
+                            </PrimaryButton>
                         </div>
                     </div>
 
@@ -158,6 +165,74 @@ export default function Products({ products, successMessage, errorMessage, cartI
                     </div>
                 </div>
             </div>
+
+            <Modal show={showModal} onClose={closeModal}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900">
+                        カートの中身
+                    </h2>
+
+                    {/* カートの中身をUIに表示する例 */}
+                    {cartInfo && Object.keys(cartInfo).length > 0 ? (
+                        <div>
+                            <ul>
+                                {Object.entries(cartInfo).map(([id, item]) => (
+                                    <li key={id} className='p-3 border-b'>
+                                        <div className='flex items-center'>
+                                            <img
+                                                src={`/storage/img/${item.img}`}
+                                                alt={item.name}
+                                                className='w-16 h-16 object-cover mr-4'
+                                            />
+                                            <div>
+                                                <p className='font-bold'>{item.name}</p>
+                                                <p>コード：{item.code}</p>
+                                                <p>価格：{item.price}円</p>
+                                                <p>
+                                                    数量：{item.quantity}個
+                                                    <button
+                                                        type='button'
+                                                        onClick={() => addCartPlus(Number(id))}
+                                                        className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 ext-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
+                                                    >
+                                                        +
+                                                    </button>
+
+                                                    {item.quantity > 1 && (
+                                                        <button
+                                                            type='button'
+                                                            onClick={() => cartMinus(Number(id))}
+                                                            className='pointer-events-auto rounded-md bg-indigo-500 px-2 py-1 mx-2 ext-[0.8125rem]/5 font-semibold text-white hover:bg-indigo-400 text-center'
+                                                        >
+                                                            -
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        type='button'
+                                                        onClick={() => removeCart(Number(id))}
+                                                        className="pointer-events-auto rounded-md bg-red-500 px-2 py-2 ml-2 text-[0.8125rem]/5 font-semibold text-white hover:bg-red-400 text-center"
+                                                    >
+                                                        カート削除
+                                                    </button>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className='mt-4 px-4 text-gray-600'>カートは空です。</p>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                        <SecondaryButton onClick={closeModal}>
+                            閉じる
+                        </SecondaryButton>
+                    </div>
+                </div>
+            </Modal>
         </Layout>
     );
 }
