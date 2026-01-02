@@ -43,6 +43,47 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', '商品をカートに追加しました');
     }
 
+    public function addCartPlus(int $id)
+    {
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$id])) {
+            $cart[$id]['quantity']++;
+        } else {
+            return redirect()->route('products.index')->with('error', 'カートに商品が見つかりません。');
+        }
+        session()->put('cart', $cart);
+        return redirect()->route('products.index');
+    }
+
+    public function cartMinus(int $id)
+    {
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$id])) {
+            if ($cart[$id]['quantity'] > 1) {
+                $cart[$id]['quantity']--;
+            }
+        } else {
+            return redirect()->route('products.index')->with('error', 'カートに商品が見つかりません。');
+        }
+        session()->put('cart', $cart);
+        return redirect()->route('products.index');
+    }
+
+    public function removeCart(int $id)
+    {
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$id])) {
+            unset($cart[$id]);
+            session()->put('cart', $cart);
+            return redirect()->route('products.index')->with('success', 'カートから商品を削除しました。');
+        } else {
+            return redirect()->route('products.index')->with('error', 'カートに商品が見つかりません。');
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */
