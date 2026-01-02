@@ -17,9 +17,7 @@ class ProductController extends Controller
 
         // 合計金額を計算
         $cart = session()->get('cart', []);
-        $totalPrice = array_reduce($cart, function ($sum, $item) {
-            return $sum + ($item['price'] * $item['quantity']);
-        }, 0);
+        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
         return Inertia::render(
             'Products/Index',
             ['products' => $products, 'totalPrice' => $totalPrice]

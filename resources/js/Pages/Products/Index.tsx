@@ -135,7 +135,7 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                             <div className='text-blue-700 text-2xl'>{product.name}</div>
                                             <div className='text-teal-700'>{product.code}</div>
                                             <div className='text-3xl'>¥{product.price}</div>
-                                            {product.active == false ? (
+                                            {!product.active ? (
                                                 <button
                                                     type='button'
                                                     className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold cursor-pointer'
