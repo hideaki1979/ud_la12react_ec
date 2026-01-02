@@ -14,7 +14,16 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::paginate(15);
-        return Inertia::render('Products/Index', ['products' => $products]);
+
+        // 合計金額を計算
+        $cart = session()->get('cart', []);
+        $totalPrice = array_reduce($cart, function ($sum, $item) {
+            return $sum + ($item['price'] * $item['quantity']);
+        }, 0);
+        return Inertia::render(
+            'Products/Index',
+            ['products' => $products, 'totalPrice' => $totalPrice]
+        );
     }
 
     public function addToCart(int $id)
