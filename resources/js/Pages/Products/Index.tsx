@@ -46,9 +46,10 @@ interface ProductsProps {
     successMessage?: string;
     errorMessage?: string;
     cartInfo?: { [id: number]: CartItem };    // idをキーとしたCartItemのオブジェクト
+    totalPrice?: number;
 }
 
-export default function Products({ products, successMessage, errorMessage, cartInfo }: ProductsProps) {
+export default function Products({ products, successMessage, errorMessage, cartInfo, totalPrice }: ProductsProps) {
     const { auth } = usePage().props;
     const [showModal, setShowModal] = useState(false);
     const Layout = auth.user ? AuthenticatedLayout : GuestProductLayout;
@@ -134,13 +135,19 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                             <div className='text-blue-700 text-2xl'>{product.name}</div>
                                             <div className='text-teal-700'>{product.code}</div>
                                             <div className='text-3xl'>¥{product.price}</div>
-                                            <button
-                                                type='button'
-                                                className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold cursor-pointer'
-                                                onClick={() => addToCart(product.id)}
-                                            >
-                                                カートに入れる
-                                            </button>
+                                            {!product.active ? (
+                                                <button
+                                                    type='button'
+                                                    className='col-span-2 mt-4 pointer-events-auto rounded-md bg-indigo-700 px-4 py-2 text-[0.8125rem]/5 text-white hover:bg-indigo-500 text-center font-semibold cursor-pointer'
+                                                    onClick={() => addToCart(product.id)}
+                                                >
+                                                    カートに入れる
+                                                </button>
+                                            ) : (
+                                                <div className="text-red-500 my-2 text-sm font-semibold">
+                                                    在庫なし
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}
@@ -172,6 +179,12 @@ export default function Products({ products, successMessage, errorMessage, cartI
                     </h2>
 
                     {/* カートの中身をUIに表示する例 */}
+                    <p className='text-lg'>
+                        合計金額： ¥{totalPrice?.toLocaleString()}
+                    </p>
+                    <p className='text-lg'>
+                        ご注文商品
+                    </p>
                     {cartInfo && Object.keys(cartInfo).length > 0 ? (
                         <div>
                             <ul>
