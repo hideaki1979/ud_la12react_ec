@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -89,6 +90,46 @@ class ProductController extends Controller
         } else {
             return redirect()->route('products.index')->with('error', 'カートに商品が見つかりません。');
         }
+    }
+
+    public function step1()
+    {
+        // ユーザーがログインしていることを確認
+        $user = Auth::user();
+        $cart = session()->get('cart', []);
+        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        // Inertiaを使用してビューにデータを渡す
+        return inertia('Checkout/Step1', [
+            'user' => $user,    // ログインユーザー情報
+            'totalPrice' => $totalPrice
+        ]);
+    }
+
+    public function confirm(Request $request)
+    {
+        $method = $request->input('method');
+        session()->put('selectedPaymentMethod', $method);
+
+        if ($method === 'cash_on_delivery') {
+            return redirect('/checkout/cash-on-delivery');
+        } elseif ($method === 'stripe') {
+            return redirect('/checkout/stripe');
+        }
+
+        return back();
+    }
+
+    public function cashOnDelivery()
+    {
+        $user = Auth::user();
+        $cart = session()->get('cart', []);
+        $totalPrice = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        return Inertia::render('Checkout/CashOnDelivery', [
+            'user' => $user,
+            'totalPrice' => $totalPrice,
+        ]);
     }
 
     /**

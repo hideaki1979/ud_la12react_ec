@@ -6,7 +6,7 @@ import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
-
+import { router } from '@inertiajs/react';
 
 interface Product {
     id: number;
@@ -86,6 +86,14 @@ export default function Products({ products, successMessage, errorMessage, cartI
             onError: () => alert('カートからの削除に失敗しました。'),
         });
     };
+
+    const checkout = () => {
+        if (auth?.user) {
+            router.visit('/checkout/step1');
+        } else {
+            router.visit('/register');
+        }
+    }
 
     return (
         <Layout
@@ -180,7 +188,7 @@ export default function Products({ products, successMessage, errorMessage, cartI
 
                     {/* カートの中身をUIに表示する例 */}
                     <p className='text-lg'>
-                        合計金額： ¥{totalPrice?.toLocaleString()}
+                        合計金額： ¥{(totalPrice ?? 0).toLocaleString()}
                     </p>
                     <p className='text-lg'>
                         ご注文商品
@@ -233,6 +241,14 @@ export default function Products({ products, successMessage, errorMessage, cartI
                                     </li>
                                 ))}
                             </ul>
+                            <div className='text-center'>
+                                <button
+                                    onClick={() => checkout()}
+                                    className='pointer-events-auto rounded-md bg-indigo-500 p-2 font-semibold text-white hover:bg-indigo-400 w-2/3 text-center"'
+                                >
+                                    決済する
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <p className='mt-4 px-4 text-gray-600'>カートは空です。</p>
