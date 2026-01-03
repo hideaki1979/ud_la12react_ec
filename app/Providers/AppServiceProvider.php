@@ -32,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
             'cartInfo' => function () {
                 return session('cart', []);
             },
+            'selectedPaymentMethodInfo' => function () {
+                return session('selectedPaymentMethod');
+            },
         ]);
     }
 }

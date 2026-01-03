@@ -7,6 +7,14 @@ export interface User {
     address?: string;
 }
 
+export interface CartItem {
+    name: string;
+    price: number;
+    code: string;
+    img: string;
+    quantity: number;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
