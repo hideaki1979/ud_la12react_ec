@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -154,51 +155,19 @@ class ProductController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function orderDone(Request $request)
     {
-        //
-    }
+        // カート情報とユーザー情報を取得, 合計金額を計算
+        $user = Auth::user();
+        ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // 管理者とユーザーにメールを送信
+        Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
+        Mail::to('管理者のメールアドレス')->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Product $product)
-    {
-        //
-    }
+        // カートをクリア
+        session()->forget('cart');
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Product $product)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Product $product)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product)
-    {
-        //
+        // 注文完了画面にリダイレクト
     }
 }
