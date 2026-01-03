@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -158,6 +161,7 @@ class ProductController extends Controller
 
     public function orderDone(Request $request)
     {
+        // 支払い方法チェック
         $selectedMethod = session('selectedPaymentMethod');
         if ($selectedMethod !== 'cash_on_delivery') {
             return redirect()->route('checkout.step1')->with('error', '不正なアクセスです。');
@@ -172,18 +176,39 @@ class ProductController extends Controller
             return redirect()->route('products.index')->with('error', 'カートが空です。');
         }
 
+        // トランザクション内で注文を保存
+        DB::transaction(function () use ($user, $cart, $totalPrice) {
+            // 注文情報を保存
+            $order = Order::create([
+                'user_id' => $user->id,
+                'payment_method' => 'cash_on_delivery',
+                'total_price' => $totalPrice,
+            ]);
+
+            // 注文詳細を保存
+            foreach ($cart as $productId => $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $productId,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                ]);
+            }
+        });
+
         // 管理者とユーザーにメールを送信
-        try {
-            Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
-            Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
-        } catch (\Exception $e) {
-            Log::error('メール送信エラー: ' . $e->getMessage());
-        }
+        // try {
+        //     Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
+        //     Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
+        // } catch (\Exception $e) {
+        //     Log::error('メール送信エラー: ' . $e->getMessage());
+        // }
 
         // カートをクリア
         session()->forget('cart');
+        session()->forget('selectedPaymentMethod');
 
         // 注文完了画面にリダイレクト
-        return Inertia::render(route('checkout.order_done'));
+        return Inertia::render('Checkout/OrderComplete');
     }
 }
