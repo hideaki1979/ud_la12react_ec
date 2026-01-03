@@ -13,4 +13,4 @@
     @endforeach
 </ul>
 
-<p>合計金額： ¥{{ number_format($item['price']) }}</p>
+<p>合計金額： ¥{{ number_format($totalPrice) }}</p>

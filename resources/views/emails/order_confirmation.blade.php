@@ -9,6 +9,6 @@
     @endforeach
 </ul>
 
-<p>合計金額： ¥{{ number_format($item['price']) }}</p>
+<p>合計金額： ¥{{ number_format($totalPrice) }}</p>
 <p>配送先： 〒{{ $user->zipcode }} {{ $user->address }}</p>
 <p>今後ともよろしくお願いいたします。</p>

@@ -11,11 +11,7 @@ interface CashOnDeliveryProps {
 
 export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPaymentMethodInfo }: CashOnDeliveryProps) {
     const OrderDone = () => {
-        router.post(route('checkout.order_done'), {}, {
-            onSuccess: () => {
-                alert('注文が確定されました。');
-            },
-        });
+        router.post(route('checkout.order_done'));
     };
 
     return (

@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,30 +12,14 @@ class AdminOrderNotificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $user;
-    public $cart;
-    public $totalPrice;
-
     /**
      * Create a new message instance.
      */
-    public function __construct($user, $cart, $totalPrice)
-    {
-        $this->user = $user;
-        $this->cart = $cart;
-        $this->totalPrice = $totalPrice;
-    }
-
-    public function build()
-    {
-        return $this->view('emails.admin_order_notification')
-            ->subject('【注文通知】新しい注文がありました')
-            ->with([
-                'user' => $this->user,
-                'cart' => $this->cart,
-                'totalPrice' => $this->totalPrice,
-            ]);
-    }
+    public function __construct(
+        public $user,
+        public $cart,
+        public $totalPrice,
+    ) {}
 
     /**
      * Get the message envelope.
@@ -44,7 +27,7 @@ class AdminOrderNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Admin Order Notification Mail',
+            subject: '【注文通知】新しい注文がありました',
         );
     }
 
@@ -54,7 +37,12 @@ class AdminOrderNotificationMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.admin_order_notification',
+            with: [
+                'user' => $this->user,
+                'cart' => $this->cart,
+                'totalPrice' => $this->totalPrice,
+            ],
         );
     }
 

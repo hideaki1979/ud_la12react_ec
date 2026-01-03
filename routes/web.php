@@ -24,7 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/checkout/step1', [ProductController::class, 'step1'])->name('checkout.step1');
-    Route::post('/checkout/confirm', [ProductController::class, 'confirm'])->name(('checkout.confirm'));
+    Route::post('/checkout/confirm', [ProductController::class, 'confirm'])->name('checkout.confirm');
     Route::get('/checkout/cash-on-delivery', [ProductController::class, 'cashOnDelivery'])->name('checkout.cash-on-delivery');
     Route::post('/checkout/order-done', [ProductController::class, 'orderDone'])->name('checkout.order_done');
 });

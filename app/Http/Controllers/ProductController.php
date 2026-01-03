@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -157,17 +158,32 @@ class ProductController extends Controller
 
     public function orderDone(Request $request)
     {
+        $selectedMethod = session('selectedPaymentMethod');
+        if ($selectedMethod !== 'cash_on_delivery') {
+            return redirect()->route('checkout.step1')->with('error', '不正なアクセスです。');
+        }
+
         // カート情報とユーザー情報を取得, 合計金額を計算
         $user = Auth::user();
         ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
+        // カートが空の場合はエラー
+        if (empty($cart)) {
+            return redirect()->route('products.index')->with('error', 'カートが空です。');
+        }
+
         // 管理者とユーザーにメールを送信
-        Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
-        Mail::to('管理者のメールアドレス')->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
+        try {
+            Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
+            Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
+        } catch (\Exception $e) {
+            Log::error('メール送信エラー: ' . $e->getMessage());
+        }
 
         // カートをクリア
         session()->forget('cart');
 
         // 注文完了画面にリダイレクト
+        return Inertia::render(route('checkout.order_done'));
     }
 }
