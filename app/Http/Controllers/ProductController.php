@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -154,51 +156,34 @@ class ProductController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function orderDone(Request $request)
     {
-        //
-    }
+        $selectedMethod = session('selectedPaymentMethod');
+        if ($selectedMethod !== 'cash_on_delivery') {
+            return redirect()->route('checkout.step1')->with('error', '不正なアクセスです。');
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // カート情報とユーザー情報を取得, 合計金額を計算
+        $user = Auth::user();
+        ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Product $product)
-    {
-        //
-    }
+        // カートが空の場合はエラー
+        if (empty($cart)) {
+            return redirect()->route('products.index')->with('error', 'カートが空です。');
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Product $product)
-    {
-        //
-    }
+        // 管理者とユーザーにメールを送信
+        try {
+            Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
+            Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
+        } catch (\Exception $e) {
+            Log::error('メール送信エラー: ' . $e->getMessage());
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Product $product)
-    {
-        //
-    }
+        // カートをクリア
+        session()->forget('cart');
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product)
-    {
-        //
+        // 注文完了画面にリダイレクト
+        return Inertia::render(route('checkout.order_done'));
     }
 }

@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { CartItem, User } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 
 interface CashOnDeliveryProps {
     user: User;
@@ -10,6 +10,10 @@ interface CashOnDeliveryProps {
 }
 
 export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPaymentMethodInfo }: CashOnDeliveryProps) {
+    const OrderDone = () => {
+        router.post(route('checkout.order_done'));
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -27,7 +31,7 @@ export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPay
                             内容をご確認の上、「注文を確定する」ボタンをクリックしてください。
                         </p>
                         <button
-                            onClick={() => { }}
+                            onClick={() => OrderDone()}
                             className='bg-indigo-500 text-white font-semibold p-4 w-64 rounded-md hover:bg-indigo-400'
                         >
                             注文を確定する
