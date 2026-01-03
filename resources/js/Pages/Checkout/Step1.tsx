@@ -10,7 +10,7 @@ interface Step1Props {
 
 export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
     const handlePaymentMethod = (method: 'cash_on_delivery' | 'stripe') => {
-        router.post('/checkout/confirm', { method });
+        router.post(route('checkout.confirm'), { method });
     };
 
     return (
@@ -26,7 +26,7 @@ export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
             <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg p-2">
-                        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 px-8 py-2'>
+                        <div className='grid grid-cols-1 gap-4 px-8 py-2'>
                             <p className='text-lg'>
                                 {user.name}さん、決済方法を選択してください。
                             </p>
@@ -43,7 +43,7 @@ export default function Step1({ user, cartInfo, totalPrice }: Step1Props) {
                                 Stripe決済
                             </button>
                             <p className='text-lg'>
-                                配送先　〒{user.zipcode} {user.address}
+                                配送先　〒{user.zipcode ?? '未設定'} {user.address ?? '未設定'}
                             </p>
                             <p className='text-lg'>
                                 合計金額： ¥{(totalPrice ?? 0).toLocaleString()}

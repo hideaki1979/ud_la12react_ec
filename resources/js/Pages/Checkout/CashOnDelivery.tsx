@@ -41,7 +41,7 @@ export default function CashOnDelivery({ user, cartInfo, totalPrice, selectedPay
                                     : ''}
                         </p>
                         <p className='text-lg'>
-                            配送先　〒{user.zipcode} {user.address}
+                            配送先　〒{user.zipcode ?? '未設定'} {user.address ?? '未設定'}
                         </p>
                         <p className='text-lg'>
                             {user.name} 様

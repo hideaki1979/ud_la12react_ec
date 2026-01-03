@@ -89,9 +89,9 @@ export default function Products({ products, successMessage, errorMessage, cartI
 
     const checkout = () => {
         if (auth?.user) {
-            router.visit('/checkout/step1');
+            router.visit(route('checkout.step1'));
         } else {
-            router.visit('/register');
+            router.visit(route('register'));
         }
     }
 

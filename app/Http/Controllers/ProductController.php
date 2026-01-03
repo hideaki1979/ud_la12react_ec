@@ -107,10 +107,11 @@ class ProductController extends Controller
     public function step1()
     {
         $user = Auth::user();
-        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
+        ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
         return inertia('Checkout/Step1', [
             'user' => $user,
+            'cartInfo' => $cart,
             'totalPrice' => $totalPrice
         ]);
     }
@@ -134,8 +135,6 @@ class ProductController extends Controller
         } elseif ($method === 'stripe') {
             return redirect()->route('checkout.stripe');
         }
-
-        return back();
     }
 
     public function cashOnDelivery()
@@ -146,10 +145,11 @@ class ProductController extends Controller
         }
 
         $user = Auth::user();
-        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
+        ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
         return Inertia::render('Checkout/CashOnDelivery', [
             'user' => $user,
+            'cartInfo' => $cart,
             'totalPrice' => $totalPrice,
         ]);
     }
