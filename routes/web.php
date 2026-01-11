@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StripeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,6 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/confirm', [ProductController::class, 'confirm'])->name('checkout.confirm');
     Route::get('/checkout/cash-on-delivery', [ProductController::class, 'cashOnDelivery'])->name('checkout.cash-on-delivery');
     Route::post('/checkout/order-done', [ProductController::class, 'orderDone'])->name('checkout.order_done');
+    Route::get('/checkout/stripe', [StripeController::class, 'createSession'])->name('checkout.stripe');
+    Route::get('/checkout/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
+    Route::get('/checkout/stripe/cancel', [StripeController::class, 'cancel'])->name('stripe.cancel');
 });
 
 Route::get('products', [ProductController::class, 'index'])->name('products.index');

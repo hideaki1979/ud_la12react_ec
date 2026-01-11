@@ -138,7 +138,10 @@ class ProductController extends Controller
         if ($method === 'cash_on_delivery') {
             return redirect()->route('checkout.cash-on-delivery');
         } elseif ($method === 'stripe') {
-            return redirect()->route('checkout.stripe');
+            // For Inertia XHR requests, use Inertia::location to trigger a
+            // full-page/navigation redirect on the client so the browser
+            // performs a top-level navigation to Stripe (avoids CORS/XHR issues).
+            return Inertia::location(route('checkout.stripe'));
         }
     }
 
