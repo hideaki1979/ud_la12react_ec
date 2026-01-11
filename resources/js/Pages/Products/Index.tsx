@@ -4,7 +4,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { router } from '@inertiajs/react';
 
