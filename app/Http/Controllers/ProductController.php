@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
+use function Symfony\Component\Clock\now;
+
 class ProductController extends Controller
 {
     /**
@@ -181,7 +183,7 @@ class ProductController extends Controller
 
         try {
             // トランザクション内で注文を保存
-            DB::transaction(function () use ($user, $cart, $totalPrice, $selectedMethod) {
+            DB::transaction(function () use ($user, $cart, $totalPrice) {
                 // 注文情報を保存
                 $order = Order::create([
                     'user_id' => $user->id,
@@ -190,11 +192,14 @@ class ProductController extends Controller
                 ]);
 
                 // 注文詳細を保存(Bulk Insert)
+                $now = now();
                 $orderItems = collect($cart)->map(fn($item, $productId) => [
                     'order_id' => $order->id,
                     'product_id' => $productId,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ])->all();
 
                 OrderItem::insert($orderItems);
