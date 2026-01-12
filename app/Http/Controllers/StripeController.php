@@ -73,64 +73,57 @@ class StripeController extends Controller
             ]
         ]);
 
+        // Stripeリダイレクト前にカートをセッションに保存
+        session()->put('cart_for_stripe_session_' . $session->id, $cart);
+
         return redirect()->away($session->url);
     }
 
     public function success(Request $request)
     {
+        // StripeセッションIDの取得
+        $sessionId = $request->get('session_id');
+
+        if (!$sessionId) {
+            // セッションIDがない場合は不正なアクセスと判断
+            Log::warning('Stripe successコールバックでsession_idが見つかりませんでした。');
+            return Inertia::render('Checkout/OrderComplete', [
+                'error' => '決済情報が見つかりませんでした',
+            ]);
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+        $session = StripeSession::retrieve($sessionId);
+        $originalCart = session('cart_for_stripe_session_' . $sessionId);
+
+        // カート改ざんチェック
+        if (empty($originalCart) || md5(json_encode($originalCart)) !== $session->metadata->cart_hash) {
+            Log::error('セッションID：' . $sessionId . 'でカートの改ざんの可能性を検出しました。');
+            return Inertia::render('Checkout/OrderComplete', ['error' => '無効な注文詳細です。']);
+        }
+
+        // 既に同じセッションIDで注文が存在するかチェック
+        $existingOrder = Order::where('stripe_session_id', $sessionId)->first();
+        if ($existingOrder) {
+            Log::warning("Stripe決済はすでに処理されています。Session ID: " . $sessionId);
+            session()->forget('cart');
+            return Inertia::render('Checkout/OrderComplete');
+        }
+
+        // 決済ステータスの確認
+        if ($session->payment_status !== 'paid') {
+            Log::warning('Stripe決済が完了していません。Session ID: ' . $sessionId . ', Status：' . $session->payment_status);
+            return Inertia::render('Checkout/OrderComplete', [
+                'error' => '決済が完了していません。再度お試しください。',
+            ]);
+        }
+
         try {
-            // StripeセッションIDの取得
-            $sessionId = $request->get('session_id');
-
-            $order = DB::transaction(function () use ($request, $sessionId) {
-
-                if (!$sessionId) {
-                    // セッションIDがない場合は不正なアクセスと判断
-                    Log::warning('Stripe successコールバックでsession_idが見つかりませんでした。');
-                    return Inertia::render('Checkout/OrderComplete', [
-                        'error' => '決済情報が見つかりませんでした',
-                    ]);
-                }
-
-                Stripe::setApiKey(config('services.stripe.secret'));
-                $session = StripeSession::retrieve($sessionId);
-                $originalCart = session('cart_for_stripe_session_' . $sessionId);
-
-                // カート改ざんチェック
-                if (empty($originalCart) || md5(json_encode($originalCart) !== $session->metadata->cart_hash)) {
-                    Log::error('セッションID：' . $sessionId . 'でカートの改ざんの可能性を検出しました。');
-                    return Inertia::render('Checkout/OrderComplete', ['error' => '無効な注文詳細です。']);
-                }
-
-                // 既に同じセッションIDで注文が存在するかチェック
-                $existingOrder = Order::where('stripe_session_id', $sessionId->first());
-                if ($existingOrder) {
-                    Log::warning("Stripe決済はすでに処理されています。Session ID: " . $sessionId);
-                    session()->forget('cart');
-                    return Inertia::render('Checkout/OrderComplete');
-                }
-
-                // 決済ステータスの確認
-                if ($session->payment_status !== 'paid') {
-                    Log::warning('Stripe決済が完了していません。Session ID: ' . $sessionId . ', Status：' . $session->payment_status);
-                    return Inertia::render('Checkout/OrderComplete', [
-                        'error' => '決済が完了していません。再度お試しください。',
-                    ]);
-                }
-
+            $order = DB::transaction(function () use ($session, $sessionId, $originalCart) {
                 // カートとユーザー情報の取得、合計金額を計算
                 $user = Auth::user();
                 // 検証済みの 'originalCart' を使用して注文を作成し、ライブセッションカートは使用しない
                 $totalOriginalCart = collect($originalCart)->sum(fn($item) => $item['price'] * $item['quantity']);
-
-                // カートが空の場合の処理を改善
-                if (empty($cart)) {
-                    Log::warning('決済成功後、カートが空でした。ユーザーID: ' . $user->id);
-                    return Inertia::render('Checkout/OrderComplete', [
-                        'error' => 'カートに商品がありませんでした。',
-                    ]);
-                }
-
                 // 注文情報を保存
                 $order = Order::create([
                     'user_id' => $user->id,
@@ -143,7 +136,7 @@ class StripeController extends Controller
                 // 注文詳細を保存(Bulk Insert)
                 $now = now();
 
-                $orderItems = collect($cart)->map(fn($item, $productId) => [
+                $orderItems = collect($totalOriginalCart)->map(fn($item, $productId) => [
                     'order_id' => $order->id,
                     'product_id' => $productId,
                     'quantity' => $item['quantity'],
@@ -165,18 +158,12 @@ class StripeController extends Controller
             // }
 
             // カート、支払選択クリア
-            session()->forget('cart');
-            session()->forget('selectedPaymentMethod');
-            session()->forget('cart_for_stripe_session_' . $sessionId);
+            session()->forget(['cart', 'selectedPaymentMethod', 'cart_for_stripe_session_' . $sessionId]);
 
             // 注文完了画面に遷移
             return Inertia::render('Checkout/OrderComplete');
         } catch (\Exception $e) {
-            // ロールバック
-            DB::rollBack();
-
             Log::error('Stripe決済エラー：' . $e->getMessage());
-
             return Inertia::render('Checkout/OrderComplete', [
                 'error' => '決済完了後の注文処理でエラーが発生しました。',
             ]);
