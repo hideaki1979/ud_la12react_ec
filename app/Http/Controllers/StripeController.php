@@ -31,13 +31,21 @@ class StripeController extends Controller
 
     public function createSession(Request $request)
     {
-        Stripe::setApiKey(env('STRIPE_SECRET'));
         $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'ログインが必要です。');
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
         ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
+
+        if (empty($cart)) {
+            return redirect()->route('products.index')->with('error', 'カートが空です。');
+        }
 
         $lineItems = [];
 
-        foreach ($cart as $id => $item) {
+        foreach ($cart as $item) {
             $lineItems[] = [
                 'price_data' => [
                     'currency' => 'jpy',
@@ -68,12 +76,40 @@ class StripeController extends Controller
             // トランザクション
             DB::beginTransaction();
 
+            // StripeセッションIDの取得
+            $sessionId = $request->get('session_id');
+            if (!$sessionId) {
+                // セッションIDがない場合は不正なアクセスと判断
+                DB::rollBack();
+                Log::warning('Stripe successコールバックでsession_idが見つかりませんでした。');
+                return Inertia::render('Checkout/OrderComplete', [
+                    'error' => '決済情報が見つかりませんでした',
+                ]);
+            }
+
+            Stripe::setApiKey(config('services.stripe.secret'));
+            $session = StripeSession::retrieve($sessionId);
+
+            // 決済ステータスの確認
+            if ($session->payment_status !== 'paid') {
+                DB::rollBack();
+                Log::warning('Stripe決済が完了していません。Session ID: ' . $sessionId . ', Status：' . $session->payment_status);
+                return Inertia::render('Checkout/OrderComplete', [
+                    'error' => '決済が完了していません。再度お試しください。',
+                ]);
+            }
+
             // カートとユーザー情報の取得、合計金額を計算
             $user = Auth::user();
             ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
 
+            // カートが空の場合の処理を改善
             if (empty($cart)) {
-                return redirect()->back();
+                DB::rollBack();
+                Log::warning('決済成功後、カートが空でした。ユーザーID: ' . $user->id);
+                return Inertia::render('Checkout/OrderComplete', [
+                    'error' => 'カートに商品がありませんでした。',
+                ]);
             }
 
             // 注文情報を保存
@@ -81,6 +117,8 @@ class StripeController extends Controller
                 'user_id' => $user->id,
                 'payment_method' => 'stripe',   // Stripe決済
                 'total_price' => $totalPrice,
+                'stripe_session_id' => $sessionId,
+                'stripe_pay_intent_id' => $session->payment_intent,
             ]);
 
             // 注文詳細を保存
