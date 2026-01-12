@@ -105,7 +105,7 @@ class StripeController extends Controller
 
         // Webhookで注文が処理されるのを待つか、既に処理済みかを確認
         // stripe_session_idで注文を検索
-        $order = Order::where('stripe_session_id', $sessionId)->first();
+        $order = Order::where('stripe_session_id', $sessionId)->where('user_id', Auth::id())->first();
 
         if ($order) {
             if ($order->stripe_status === 'completed') {
@@ -114,7 +114,7 @@ class StripeController extends Controller
                 return Inertia::render('Checkout/OrderComplete', [
                     'message' => 'ご注文ありがとうございます。',
                 ]);
-            } else if ($order->status === 'pending') {
+            } else if ($order->stripe_status === 'pending') {
                 // 注文がまだWebhookで処理中の場合（稀だが、発生しうる）
                 // ユーザーに処理中であることを伝える
                 return Inertia::render('Checkout/OrderComplete', [

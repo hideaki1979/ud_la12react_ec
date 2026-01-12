@@ -61,7 +61,7 @@ class ProcessStripeWebhook implements ShouldQueue
         // データベースから注文を取得
         $order = Order::find($orderId);
 
-        if ($order) {
+        if (!$order) {
             Log::error('Webhook Job: 注文ID ' . $orderId . ' の注文が見つかりませんでした。Session ID: ' . $stripeSessionId);
             return;
         }
@@ -76,7 +76,7 @@ class ProcessStripeWebhook implements ShouldQueue
         if ($session->payment_status !== 'paid') {
             Log::warning('Stripe決済が完了していません。Session ID: ' . $session->id . ', Status：' . $session->payment_status);
             // 注文ステータスを'failed'に更新する
-            $order->update(['status' => 'failed']);
+            $order->update(['stripe_status' => 'failed']);
             return;
         }
 
@@ -95,6 +95,7 @@ class ProcessStripeWebhook implements ShouldQueue
 
                 if (empty($originalCart)) {
                     Log::error('Webhook Job: 注文ID ' . $orderId . ' のcart_dataが空です。');
+                    $order->update(['status' => 'failed']); // エラー時はステータスをfailedにする。
                     return;
                 }
 
