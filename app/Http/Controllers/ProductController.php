@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
+use function Symfony\Component\Clock\now;
+
 class ProductController extends Controller
 {
     /**
@@ -138,7 +140,10 @@ class ProductController extends Controller
         if ($method === 'cash_on_delivery') {
             return redirect()->route('checkout.cash-on-delivery');
         } elseif ($method === 'stripe') {
-            return redirect()->route('checkout.stripe');
+            // For Inertia XHR requests, use Inertia::location to trigger a
+            // full-page/navigation redirect on the client so the browser
+            // performs a top-level navigation to Stripe (avoids CORS/XHR issues).
+            return Inertia::location(route('checkout.stripe'));
         }
     }
 
@@ -176,25 +181,33 @@ class ProductController extends Controller
             return redirect()->route('products.index')->with('error', 'カートが空です。');
         }
 
-        // トランザクション内で注文を保存
-        DB::transaction(function () use ($user, $cart, $totalPrice) {
-            // 注文情報を保存
-            $order = Order::create([
-                'user_id' => $user->id,
-                'payment_method' => 'cash_on_delivery',
-                'total_price' => $totalPrice,
-            ]);
+        try {
+            // トランザクション内で注文を保存
+            DB::transaction(function () use ($user, $cart, $totalPrice) {
+                // 注文情報を保存
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'payment_method' => 'cash_on_delivery',
+                    'total_price' => $totalPrice,
+                ]);
 
-            // 注文詳細を保存
-            foreach ($cart as $productId => $item) {
-                OrderItem::create([
+                // 注文詳細を保存(Bulk Insert)
+                $now = now();
+                $orderItems = collect($cart)->map(fn($item, $productId) => [
                     'order_id' => $order->id,
                     'product_id' => $productId,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
-                ]);
-            }
-        });
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all();
+
+                OrderItem::insert($orderItems);
+            });
+        } catch (\Throwable $e) {
+            Log::error('注文処理エラー：' . $e->getMessage());
+            return redirect()->route('checkout.step1')->with('error', '注文処理中にエラーが発生しました。');
+        }
 
         // 管理者とユーザーにメールを送信
         // try {
