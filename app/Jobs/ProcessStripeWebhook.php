@@ -95,8 +95,7 @@ class ProcessStripeWebhook implements ShouldQueue
 
                 if (empty($originalCart)) {
                     Log::error('Webhook Job: 注文ID ' . $orderId . ' のcart_dataが空です。');
-                    $order->update(['status' => 'failed']); // エラー時はステータスをfailedにする。
-                    return;
+                    throw new \Exception('Cart情報が空です。');
                 }
 
                 // 注文詳細を保存(Bulk Insert)
@@ -127,7 +126,7 @@ class ProcessStripeWebhook implements ShouldQueue
             });
         } catch (\Exception $e) {
             Log::error('Stripe決済エラー：' . $e->getMessage());
-            $order->update(['status' => 'failed']); // エラー時はステータスをfailedにする。
+            $order->update(['stripe_status' => 'failed']); // エラー時はステータスをfailedにする。
         }
     }
 }
