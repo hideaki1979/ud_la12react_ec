@@ -45,6 +45,15 @@ class StripeController extends Controller
             return redirect()->route('products.index')->with('error', 'カートが空です。');
         }
 
+        // 注文を'pending'ステータスで事前に作成し、カートデータを保存
+        $order = Order::create([
+            'user_id' => $user->id,
+            'payment_method' => 'stripe',
+            'total_price' => $totalPrice,
+            'stripe_status' => 'pending',   // Stripe決済待ち
+            'cart_data' => $cart,   // カートデータをJSONとして保存
+        ]);
+
         $lineItems = [];
 
         foreach ($cart as $item) {
@@ -74,13 +83,15 @@ class StripeController extends Controller
         ]);
 
         // Stripeリダイレクト前にカートをセッションに保存
-        session()->put('cart_for_stripe_session_' . $session->id, $cart);
+        $order->stripe_session_id = $session->id;
+        $order->save();
 
         return redirect()->away($session->url);
     }
 
     public function success(Request $request)
     {
+
         // StripeセッションIDの取得
         $sessionId = $request->get('session_id');
 
@@ -92,80 +103,34 @@ class StripeController extends Controller
             ]);
         }
 
-        Stripe::setApiKey(config('services.stripe.secret'));
-        $session = StripeSession::retrieve($sessionId);
-        $originalCart = session('cart_for_stripe_session_' . $sessionId);
+        // Webhookで注文が処理されるのを待つか、既に処理済みかを確認
+        // stripe_session_idで注文を検索
+        $order = Order::where('stripe_session_id', $sessionId)->where('user_id', Auth::id())->first();
 
-        // カート改ざんチェック
-        if (empty($originalCart) || md5(json_encode($originalCart)) !== $session->metadata->cart_hash) {
-            Log::error('セッションID：' . $sessionId . 'でカートの改ざんの可能性を検出しました。');
-            return Inertia::render('Checkout/OrderComplete', ['error' => '無効な注文詳細です。']);
-        }
-
-        // 既に同じセッションIDで注文が存在するかチェック
-        $existingOrder = Order::where('stripe_session_id', $sessionId)->first();
-        if ($existingOrder) {
-            Log::warning("Stripe決済はすでに処理されています。Session ID: " . $sessionId);
-            session()->forget('cart');
-            return Inertia::render('Checkout/OrderComplete');
-        }
-
-        // 決済ステータスの確認
-        if ($session->payment_status !== 'paid') {
-            Log::warning('Stripe決済が完了していません。Session ID: ' . $sessionId . ', Status：' . $session->payment_status);
-            return Inertia::render('Checkout/OrderComplete', [
-                'error' => '決済が完了していません。再度お試しください。',
-            ]);
-        }
-
-        try {
-            $order = DB::transaction(function () use ($session, $sessionId, $originalCart) {
-                // カートとユーザー情報の取得、合計金額を計算
-                $user = Auth::user();
-                // 検証済みの 'originalCart' を使用して注文を作成し、ライブセッションカートは使用しない
-                $totalOriginalCart = collect($originalCart)->sum(fn($item) => $item['price'] * $item['quantity']);
-                // 注文情報を保存
-                $order = Order::create([
-                    'user_id' => $user->id,
-                    'payment_method' => 'stripe',   // Stripe決済
-                    'total_price' => $totalOriginalCart,
-                    'stripe_session_id' => $sessionId,
-                    'stripe_pay_intent_id' => $session->payment_intent,
+        if ($order) {
+            if ($order->stripe_status === 'completed') {
+                // 注文がWebhookによって正常に処理された場合
+                session()->forget(['cart', 'selectedPaymentMethod', 'cart_for_stripe_session_' . $sessionId]);
+                return Inertia::render('Checkout/OrderComplete', [
+                    'message' => 'ご注文ありがとうございます。',
                 ]);
-
-                // 注文詳細を保存(Bulk Insert)
-                $now = now();
-
-                $orderItems = collect($totalOriginalCart)->map(fn($item, $productId) => [
-                    'order_id' => $order->id,
-                    'product_id' => $productId,
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
+            } else if ($order->stripe_status === 'pending') {
+                // 注文がまだWebhookで処理中の場合（稀だが、発生しうる）
+                // ユーザーに処理中であることを伝える
+                return Inertia::render('Checkout/OrderComplete', [
+                    'message' => 'ご注文を処理中です。しばらくお待ちください。',
                 ]);
-                OrderItem::insert($orderItems);
-
-                return $order;
-            });
-
-            // 管理者とユーザーにメールを送信
-            // try {
-            //     Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
-            //     Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
-            // } catch (\Exception $e) {
-            //     Log::error('メール送信エラー: ' . $e->getMessage());
-            // }
-
-            // カート、支払選択クリア
-            session()->forget(['cart', 'selectedPaymentMethod', 'cart_for_stripe_session_' . $sessionId]);
-
-            // 注文完了画面に遷移
-            return Inertia::render('Checkout/OrderComplete');
-        } catch (\Exception $e) {
-            Log::error('Stripe決済エラー：' . $e->getMessage());
+            } else {
+                // その他のステータス（例: failed）
+                return Inertia::render('Checkout/OrderComplete', [
+                    'error' => '注文処理中に問題が発生しました。後ほど注文履歴をご確認ください。',
+                ]);
+            }
+        } else {
+            // 注文が見つからない場合
+            Log::error('Stripe successコールバックで注文が見つかりませんでした。Session ID: ' . $sessionId);
             return Inertia::render('Checkout/OrderComplete', [
-                'error' => '決済完了後の注文処理でエラーが発生しました。',
+                'error' => '注文情報が見つかりませんでした。',
             ]);
         }
     }

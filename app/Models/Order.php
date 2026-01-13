@@ -9,7 +9,19 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'payment_method', 'total_price', 'stripe_session_id', 'stripe_pay_intent_id'];
+    protected $fillable = [
+        'user_id',
+        'payment_method',
+        'total_price',
+        'stripe_session_id',
+        'stripe_pay_intent_id',
+        'stripe_status',
+        'cart_data'
+    ];
+
+    protected $casts = [
+        'cart_data' => 'array',
+    ];
 
     public function items()
     {
