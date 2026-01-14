@@ -101,14 +101,20 @@ class ProcessStripeWebhook implements ShouldQueue
                 // 注文詳細を保存(Bulk Insert)
                 $now = now();
 
-                $orderItems = collect($originalCart)->map(fn($item, $productId) => [
-                    'order_id' => $order->id,
-                    'product_id' => $productId,
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ])->values()->all();
+                $orderItems = collect($originalCart)->map(function ($item, $productId) use ($order, $now, $orderId) {
+                    if (!isset($item['quantity'], $item['price'])) {
+                        Log::error('Webhook Job: cart_dataのアイテム構造が不正です。Order ID: ' . $orderId);
+                        throw new \Exception('Cart itemの構造が不正です。');
+                    }
+                    return [
+                        'order_id' => $order->id,
+                        'product_id' => $productId,
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->values()->all();
 
                 OrderItem::insert($orderItems);
 
