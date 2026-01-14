@@ -43,13 +43,6 @@ Route::post('/products/remove/{id}', [ProductController::class, 'removeCart'])->
 // Stripe Webhook endpoint for receiving events from Stripe
 // Note: Laravel 11 uses framework middleware classes directly
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
-    ->name('stripe.webhook')
-    ->withoutMiddleware([
-        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-        \Illuminate\Cookie\Middleware\EncryptCookies::class,
-    ]);
+    ->name('stripe.webhook');
 
 require __DIR__ . '/auth.php';

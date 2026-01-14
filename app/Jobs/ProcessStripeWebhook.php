@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\Event;
 use Stripe\Stripe;
+use App\Exceptions\InvalidCartDataException;
 
 class ProcessStripeWebhook implements ShouldQueue
 {
@@ -81,7 +82,7 @@ class ProcessStripeWebhook implements ShouldQueue
         }
 
         try {
-            $orderData = DB::transaction(function () use ($session, $stripeSessionId, $order, $orderId) {
+            $orderData = DB::transaction(function () use ($session, $stripeSessionId, $order) {
 
                 // 注文情報を更新
                 $order->update([
@@ -94,17 +95,17 @@ class ProcessStripeWebhook implements ShouldQueue
                 $originalCart = $order->cart_data;
 
                 if (empty($originalCart)) {
-                    Log::error('Webhook Job: 注文ID ' . $orderId . ' のcart_dataが空です。');
-                    throw new \Exception('Cart情報が空です。');
+                    Log::error('Webhook Job: 注文ID ' . $order->id . ' のcart_dataが空です。');
+                    throw new InvalidCartDataException('Cart情報が空です。');
                 }
 
                 // 注文詳細を保存(Bulk Insert)
                 $now = now();
 
-                $orderItems = collect($originalCart)->map(function ($item, $productId) use ($order, $now, $orderId) {
+                $orderItems = collect($originalCart)->map(function ($item, $productId) use ($order, $now) {
                     if (!isset($item['quantity'], $item['price'])) {
-                        Log::error('Webhook Job: cart_dataのアイテム構造が不正です。Order ID: ' . $orderId);
-                        throw new \Exception('Cart itemの構造が不正です。');
+                        Log::error('Webhook Job: cart_dataのアイテム構造が不正です。Order ID: ' . $order->id);
+                        throw new InvalidCartDataException('Cart itemの構造が不正です。');
                     }
                     return [
                         'order_id' => $order->id,
@@ -118,7 +119,7 @@ class ProcessStripeWebhook implements ShouldQueue
 
                 OrderItem::insert($orderItems);
 
-                Log::info('Webhook Job: Order processed successfully for Order ID: ' . $orderId . ', Session ID: ' . $stripeSessionId);
+                Log::info('Webhook Job: Order processed successfully for Order ID: ' . $order->id . ', Session ID: ' . $stripeSessionId);
 
                 // 管理者とユーザーにメールを送信
                 // try {

@@ -1,19 +1,22 @@
+x-php-service: &php-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  working_dir: /var/www
+  volumes:
+    - ./:/var/www
+    - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+  networks:
+    - laravel
+  depends_on:
+    - mysql
+
 services:
   # Laravel Application
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *php-service
     container_name: laravel_app
-    restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./:/var/www
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-    networks:
-      - laravel
-    depends_on:
-      - mysql
 
   # Nginx Web Server
   nginx:
@@ -49,18 +52,9 @@ services:
 
   # Queue Worker
   queue:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *php-service
     container_name: laravel_queue
-    restart: unless-stopped
-    working_dir: /var/www
     command: php artisan queue:work --sleep=3 --tries=3
-    volumes:
-      - ./:/var/www
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-    networks:
-      - laravel
     depends_on:
       - mysql
       - app
