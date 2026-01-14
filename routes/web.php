@@ -41,7 +41,7 @@ Route::post('/products/minus/{id}', [ProductController::class, 'cartMinus'])->na
 Route::post('/products/remove/{id}', [ProductController::class, 'removeCart'])->name('products.remove')->where('id', '[0-9]+');
 
 // Stripe Webhook endpoint for receiving events from Stripe
-// Note: Laravel 11 uses framework middleware classes directly
+// Note: Laravel 12 uses framework middleware classes directly
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->name('stripe.webhook');
 
