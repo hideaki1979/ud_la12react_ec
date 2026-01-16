@@ -11,9 +11,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Event;
 use Stripe\Stripe;
 use App\Exceptions\InvalidCartDataException;
+use App\Mail\OrderConfirmationMail;
+use App\Mail\AdminOrderNotificationMail;
 
 class ProcessStripeWebhook implements ShouldQueue
 {
@@ -121,19 +124,49 @@ class ProcessStripeWebhook implements ShouldQueue
 
                 Log::info('Webhook Job: Order processed successfully for Order ID: ' . $order->id . ', Session ID: ' . $stripeSessionId);
 
-                // 管理者とユーザーにメールを送信
-                // try {
-                //     Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
-                //     Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
-                // } catch (\Exception $e) {
-                //     Log::error('メール送信エラー: ' . $e->getMessage());
-                // }
-
                 return $order;
             });
+
+            // トランザクション成功後にメールを送信（トランザクション外で実行）
+            $this->sendOrderEmails($orderData);
         } catch (\Exception $e) {
             Log::error('Stripe決済エラー：' . $e->getMessage());
             $order->update(['stripe_status' => 'failed']); // エラー時はステータスをfailedにする。
+        }
+    }
+
+    /**
+     * 注文完了メールを送信
+     *
+     * @param Order $order
+     * @return void
+     */
+    protected function sendOrderEmails(Order $order): void
+    {
+        $user = $order->user;
+        $cart = $order->cart_data;
+        $totalPrice = $order->total_price;
+
+        if (!$user) {
+            Log::error('Webhook Job: メール送信時にユーザーが見つかりませんでした。Order ID: ' . $order->id);
+            return;
+        }
+
+        try {
+            // ユーザーに注文確認メールを送信
+            Mail::to($user->email)->send(new OrderConfirmationMail($user, $cart, $totalPrice));
+            Log::info('Webhook Job: ユーザーへの注文確認メール送信完了。Order ID: ' . $order->id);
+
+            // 管理者に注文通知メールを送信
+            $adminEmail = config('mail.admin_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminOrderNotificationMail($user, $cart, $totalPrice));
+                Log::info('Webhook Job: 管理者への注文通知メール送信完了。Order ID: ' . $order->id);
+            } else {
+                Log::warning('Webhook Job: 管理者メールアドレスが設定されていません。Order ID: ' . $order->id);
+            }
+        } catch (\Exception $e) {
+            Log::error('Webhook Job: メール送信エラー: ' . $e->getMessage() . ' Order ID: ' . $order->id);
         }
     }
 }
