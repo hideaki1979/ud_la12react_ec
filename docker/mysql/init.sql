@@ -1,0 +1,4 @@
+-- ProxySQL監視用ユーザー
+CREATE USER IF NOT EXISTS 'monitor'@'%' IDENTIFIED BY 'monitor';
+GRANT USAGE, REPLICATION CLIENT ON *.* TO 'monitor'@'%';
+FLUSH PRIVILEGES;

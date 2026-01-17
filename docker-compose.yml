@@ -47,6 +47,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - laravel
 
@@ -77,10 +78,53 @@ services:
     depends_on:
       - mysql
 
+  # Redis Cache Server
+  redis:
+    image: redis:alpine
+    container_name: laravel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ProxySQL Database Proxy
+  proxysql:
+    image: proxysql/proxysql:latest
+    container_name: laravel_proxysql
+    restart: unless-stopped
+    ports:
+      - "6033:6033"  # MySQL Protocol
+      - "6032:6032"  # Admin Interface
+    volumes:
+      - ./docker/proxysql/proxysql.cnf:/etc/proxysql.cnf
+      - proxysql_data:/var/lib/proxysql
+    networks:
+      - laravel
+    depends_on:
+      mysql:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6033", "-u", "laravel", "-plaravel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   laravel:
     driver: bridge
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  proxysql_data:
     driver: local

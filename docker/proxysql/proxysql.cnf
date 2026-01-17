@@ -1,0 +1,94 @@
+datadir="/var/lib/proxysql"
+
+admin_variables=
+{
+    admin_credentials="admin:admin;radmin:radmin"
+    mysql_ifaces="0.0.0.0:6032"
+}
+
+mysql_variables=
+{
+    threads=4
+    max_connections=2048
+    default_query_delay=0
+    default_query_timeout=36000000
+    have_compress=true
+    poll_timeout=2000
+    interfaces="0.0.0.0:6033"
+    default_schema="information_schema"
+    stacksize=1048576
+    server_version="8.0.32"
+    connect_timeout_server=3000
+    monitor_username="monitor"
+    monitor_password="monitor"
+    monitor_history=600000
+    monitor_connect_interval=60000
+    monitor_ping_interval=10000
+    monitor_read_only_interval=1500
+    monitor_read_only_timeout=500
+    ping_interval_server_msec=120000
+    ping_timeout_server=500
+    commands_stats=true
+    sessions_sort=true
+    connect_retries_on_failure=10
+    query_cache_size_MB=256
+}
+
+mysql_servers=
+(
+    {
+        address="mysql"
+        port=3306
+        hostgroup=0
+        max_connections=100
+        weight=1
+    }
+)
+
+mysql_users=
+(
+    {
+        username="laravel"
+        password="laravel"
+        default_hostgroup=0
+        max_connections=200
+        default_schema="laravel"
+        active=1
+    }
+)
+
+mysql_query_rules=
+(
+    # 商品情報のキャッシュ（60秒）
+    {
+        rule_id=1
+        active=1
+        match_pattern="^SELECT .* FROM products"
+        cache_ttl=60000
+        apply=1
+    },
+    # ユーザー情報のキャッシュ（30秒）
+    {
+        rule_id=2
+        active=1
+        match_pattern="^SELECT .* FROM users WHERE id"
+        cache_ttl=30000
+        apply=1
+    },
+    # 注文ステータスチェックはキャッシュしない（冪等性のため）
+    {
+        rule_id=3
+        active=1
+        match_pattern="^SELECT .* FROM orders WHERE stripe_status"
+        cache_ttl=0
+        apply=1
+    },
+    # セッション・ジョブはキャッシュしない
+    {
+        rule_id=4
+        active=1
+        match_pattern="^SELECT .* FROM (sessions|jobs|failed_jobs)"
+        cache_ttl=0
+        apply=1
+    }
+)
