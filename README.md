@@ -7,6 +7,113 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Docker環境セットアップ
+
+### 必要条件
+
+- Docker
+- Docker Compose
+
+### 新規セットアップ
+
+```bash
+# 1. 環境変数ファイルをコピー
+cp .env.example .env
+
+# 2. .envファイルを編集し、必要な値を設定（必須）
+# - DB_PASSWORD              ※必須: データベース接続用
+# - MYSQL_ROOT_PASSWORD      ※必須: MySQL root パスワード
+# - PROXYSQL_ADMIN_PASSWORD  ※必須: ProxySQL管理用
+# - PROXYSQL_MONITOR_PASSWORD ※必須: ProxySQL監視用（未設定時はエラー）
+# - STRIPE_SECRET, STRIPE_PUBLIC, STRIPE_WEBHOOK_SECRET
+#
+# 注意: PROXYSQL_MONITOR_PASSWORD が未設定の場合、MySQL初期化が失敗します
+
+# 3. Dockerコンテナをビルド・起動
+docker-compose up -d --build
+
+# 4. マイグレーション実行（ProxySQLをバイパスして直接接続）
+docker-compose exec app php artisan migrate --database=mysql_direct
+
+# 5. シーダー実行（必要に応じて）
+docker-compose exec app php artisan db:seed --database=mysql_direct
+```
+
+### 既存環境へのProxySQL追加
+
+既存のMySQLボリュームがある環境では、initスクリプトが自動実行されません。
+以下のコマンドでProxySQL監視ユーザーを手動で作成してください。
+
+```bash
+# ProxySQL監視ユーザーを手動作成（Dockerネットワーク内のみ接続可能）
+docker-compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "
+  CREATE USER IF NOT EXISTS 'monitor'@'laravel_proxysql.laravel' IDENTIFIED BY '${PROXYSQL_MONITOR_PASSWORD}';
+  GRANT USAGE, REPLICATION CLIENT ON *.* TO 'monitor'@'laravel_proxysql.laravel';
+  CREATE USER IF NOT EXISTS 'monitor'@'172.%.%.%' IDENTIFIED BY '${PROXYSQL_MONITOR_PASSWORD}';
+  GRANT USAGE, REPLICATION CLIENT ON *.* TO 'monitor'@'172.%.%.%';
+  FLUSH PRIVILEGES;
+"
+
+# または環境変数を直接指定
+docker-compose exec mysql mysql -u root -proot -e "
+  CREATE USER IF NOT EXISTS 'monitor'@'laravel_proxysql.laravel' IDENTIFIED BY 'monitor_secure_password';
+  GRANT USAGE, REPLICATION CLIENT ON *.* TO 'monitor'@'laravel_proxysql.laravel';
+  CREATE USER IF NOT EXISTS 'monitor'@'172.%.%.%' IDENTIFIED BY 'monitor_secure_password';
+  GRANT USAGE, REPLICATION CLIENT ON *.* TO 'monitor'@'172.%.%.%';
+  FLUSH PRIVILEGES;
+"
+```
+
+### サービス一覧
+
+| サービス | ポート | 説明 |
+|---------|-------|------|
+| nginx | 8080 | Webサーバー |
+| mysql | 3306 | データベース（直接接続） |
+| proxysql | 6033 | データベースプロキシ（アプリ用） |
+| redis | 6379 | キャッシュ/セッション/キュー |
+| phpmyadmin | 8888 | データベース管理UI |
+
+> **Note**: ProxySQL管理インターフェース（6032）はセキュリティのためホストに公開していません。
+> アクセスには `docker-compose exec` を使用してください。
+
+### ProxySQL管理
+
+```bash
+# ProxySQL管理コンソールに接続
+docker-compose exec proxysql mysql -h 127.0.0.1 -P 6032 -u admin -p"${PROXYSQL_ADMIN_PASSWORD}"
+
+# Query Cache統計を確認
+SELECT * FROM stats_mysql_global WHERE Variable_Name LIKE 'Query_Cache%';
+
+# 接続プール状況を確認
+SELECT * FROM stats_mysql_connection_pool;
+```
+
+### トラブルシューティング
+
+#### Redis接続エラー（Class "Redis" not found）
+Dockerイメージを再ビルドしてください：
+```bash
+docker-compose build --no-cache app queue
+docker-compose up -d
+```
+
+#### ProxySQL接続エラー
+監視ユーザーが作成されているか確認してください（上記「既存環境へのProxySQL追加」参照）。
+
+#### MySQL初期化エラー（PROXYSQL_MONITOR_PASSWORD must be set）
+`.env`ファイルで`PROXYSQL_MONITOR_PASSWORD`が設定されているか確認してください：
+```bash
+# .envファイルを確認
+grep PROXYSQL_MONITOR_PASSWORD .env
+
+# 設定されていない場合は追加
+echo "PROXYSQL_MONITOR_PASSWORD=your_secure_password" >> .env
+```
+
+---
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

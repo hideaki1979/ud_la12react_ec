@@ -20,7 +20,7 @@ services:
 
   # Nginx Web Server
   nginx:
-    image: nginx:alpine
+    image: nginx:1.28-alpine
     container_name: laravel_nginx
     restart: unless-stopped
     ports:
@@ -35,7 +35,7 @@ services:
 
   # MySQL Database
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.42
     container_name: laravel_mysql
     restart: unless-stopped
     environment:
@@ -43,12 +43,20 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      PROXYSQL_MONITOR_USER: ${PROXYSQL_MONITOR_USER:-monitor}
+      PROXYSQL_MONITOR_PASSWORD: ${PROXYSQL_MONITOR_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init-proxysql-user.sh:/docker-entrypoint-initdb.d/init-proxysql-user.sh
     networks:
       - laravel
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Queue Worker
   queue:
@@ -61,14 +69,14 @@ services:
 
   # PHPMyAdmin
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
+    image: phpmyadmin/phpmyadmin:5.2.2
     container_name: laravel_phpmyadmin
     restart: unless-stopped
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_USER: root
-      PMA_PASSWORD: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       UPLOAD_LIMIT: 64M
     ports:
       - "8888:80"
@@ -77,10 +85,67 @@ services:
     depends_on:
       - mysql
 
+  # Redis Cache Server
+  redis:
+    image: redis:7.4.6-alpine
+    container_name: laravel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ProxySQL Database Proxy
+  proxysql:
+    build:
+      context: ./docker/proxysql
+      dockerfile: Dockerfile
+    container_name: laravel_proxysql
+    restart: unless-stopped
+    ports:
+      - "6033:6033" # MySQL Protocol
+      # 6032 (Admin Interface) はセキュリティのため公開しない
+      # アクセス方法: docker-compose exec proxysql mysql -h 127.0.0.1 -P 6032 -u admin -p
+    environment:
+      PROXYSQL_ADMIN_USER: ${PROXYSQL_ADMIN_USER:-admin}
+      PROXYSQL_ADMIN_PASSWORD: ${PROXYSQL_ADMIN_PASSWORD}
+      PROXYSQL_MONITOR_USER: ${PROXYSQL_MONITOR_USER:-monitor}
+      PROXYSQL_MONITOR_PASSWORD: ${PROXYSQL_MONITOR_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+    volumes:
+      - proxysql_data:/var/lib/proxysql
+    networks:
+      - laravel
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "MYSQL_PWD=${DB_PASSWORD} mysqladmin ping -h 127.0.0.1 -P 6033 -u ${DB_USERNAME}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   laravel:
     driver: bridge
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  proxysql_data:
     driver: local

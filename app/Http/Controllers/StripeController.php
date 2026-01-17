@@ -105,8 +105,11 @@ class StripeController extends Controller
         }
 
         // Webhookで注文が処理されるのを待つか、既に処理済みかを確認
-        // stripe_session_idで注文を検索
-        $order = Order::where('stripe_session_id', $sessionId)->where('user_id', Auth::id())->first();
+        // stripe_session_idで注文を検索（N+1問題回避のためリレーションを先読み）
+        $order = Order::with('user', 'items')
+            ->where('stripe_session_id', $sessionId)
+            ->where('user_id', Auth::id())
+            ->first();
 
         if ($order) {
             if ($order->stripe_status === 'completed') {

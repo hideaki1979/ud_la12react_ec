@@ -62,8 +62,8 @@ class ProcessStripeWebhook implements ShouldQueue
             return;
         }
 
-        // データベースから注文を取得
-        $order = Order::find($orderId);
+        // データベースから注文を取得（N+1問題回避のためユーザーを先読み）
+        $order = Order::with('user')->find($orderId);
 
         if (!$order) {
             Log::error('Webhook Job: 注文ID ' . $orderId . ' の注文が見つかりませんでした。Session ID: ' . $stripeSessionId);
