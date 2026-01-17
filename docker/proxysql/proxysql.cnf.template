@@ -2,7 +2,7 @@ datadir="/var/lib/proxysql"
 
 admin_variables=
 {
-    admin_credentials="admin:admin;radmin:radmin"
+    admin_credentials="${PROXYSQL_ADMIN_USER}:${PROXYSQL_ADMIN_PASSWORD};radmin:${PROXYSQL_ADMIN_PASSWORD}"
     mysql_ifaces="0.0.0.0:6032"
 }
 
@@ -19,8 +19,8 @@ mysql_variables=
     stacksize=1048576
     server_version="8.0.32"
     connect_timeout_server=3000
-    monitor_username="monitor"
-    monitor_password="monitor"
+    monitor_username="${PROXYSQL_MONITOR_USER}"
+    monitor_password="${PROXYSQL_MONITOR_PASSWORD}"
     monitor_history=600000
     monitor_connect_interval=60000
     monitor_ping_interval=10000
@@ -48,11 +48,11 @@ mysql_servers=
 mysql_users=
 (
     {
-        username="laravel"
-        password="laravel"
+        username="${DB_USERNAME}"
+        password="${DB_PASSWORD}"
         default_hostgroup=0
         max_connections=200
-        default_schema="laravel"
+        default_schema="${DB_DATABASE}"
         active=1
     }
 )
