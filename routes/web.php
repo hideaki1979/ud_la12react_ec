@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -38,5 +39,10 @@ Route::post('/products/add/{id}', [ProductController::class, 'addToCart'])->name
 Route::post('/products/plus/{id}', [ProductController::class, 'addCartPlus'])->name('products.plus')->where('id', '[0-9]+');
 Route::post('/products/minus/{id}', [ProductController::class, 'cartMinus'])->name('products.minus')->where('id', '[0-9]+');
 Route::post('/products/remove/{id}', [ProductController::class, 'removeCart'])->name('products.remove')->where('id', '[0-9]+');
+
+// Stripe Webhook endpoint for receiving events from Stripe
+// Note: Laravel 12 uses framework middleware classes directly
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+    ->name('stripe.webhook');
 
 require __DIR__ . '/auth.php';

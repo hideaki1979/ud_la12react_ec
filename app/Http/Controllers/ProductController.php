@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Mail\OrderConfirmationMail;
+use App\Mail\AdminOrderNotificationMail;
 
 use function Symfony\Component\Clock\now;
 
@@ -209,13 +211,8 @@ class ProductController extends Controller
             return redirect()->route('checkout.step1')->with('error', '注文処理中にエラーが発生しました。');
         }
 
-        // 管理者とユーザーにメールを送信
-        // try {
-        //     Mail::to($user->email)->send(new \App\Mail\OrderConfirmationMail($user, $cart, $totalPrice));
-        //     Mail::to(env('ADMIN_EMAIL'))->send(new \App\Mail\AdminOrderNotificationMail($user, $cart, $totalPrice));
-        // } catch (\Exception $e) {
-        //     Log::error('メール送信エラー: ' . $e->getMessage());
-        // }
+        // トランザクション成功後にメールを送信（トランザクション外で実行）
+        $this->sendOrderEmails($user, $cart, $totalPrice);
 
         // カートをクリア
         session()->forget('cart');
@@ -223,5 +220,33 @@ class ProductController extends Controller
 
         // 注文完了画面にリダイレクト
         return Inertia::render('Checkout/OrderComplete');
+    }
+
+    /**
+     * 注文完了メールを送信
+     *
+     * @param mixed $user
+     * @param array $cart
+     * @param int|float $totalPrice
+     * @return void
+     */
+    private function sendOrderEmails($user, array $cart, $totalPrice): void
+    {
+        try {
+            // ユーザーに注文確認メールを送信
+            Mail::to($user->email)->send(new OrderConfirmationMail($user, $cart, $totalPrice));
+            Log::info('ユーザーへの注文確認メール送信完了。User ID: ' . $user->id);
+
+            // 管理者に注文通知メールを送信
+            $adminEmail = config('mail.admin_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminOrderNotificationMail($user, $cart, $totalPrice));
+                Log::info('管理者への注文通知メール送信完了。User ID: ' . $user->id);
+            } else {
+                Log::warning('管理者メールアドレスが設定されていません。User ID: ' . $user->id);
+            }
+        } catch (\Exception $e) {
+            Log::error('メール送信エラー: ' . $e->getMessage() . ' User ID: ' . $user->id);
+        }
     }
 }

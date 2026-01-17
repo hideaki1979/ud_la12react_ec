@@ -26,10 +26,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 COPY composer.json composer.lock ./
-RUN composer install
+RUN composer install --no-scripts --no-autoloader
 
 # Copy existing application directory
 COPY . .
+
+# Run composer scripts after copying all files
+RUN composer dump-autoload --optimize && composer run-script post-autoload-dump
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www \

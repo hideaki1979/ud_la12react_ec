@@ -77,6 +77,7 @@ class StripeController extends Controller
             'cancel_url' => route('stripe.cancel'), // キャンセル時のリダイレクト
             'customer_email' => $user->email,
             'metadata' => [
+                'order_id' => $order->id,
                 'cart_hash' => md5(json_encode($cart)),
                 'user_id' => $user->id,
             ]
