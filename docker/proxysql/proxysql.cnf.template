@@ -63,7 +63,7 @@ mysql_query_rules=
     {
         rule_id=1
         active=1
-        match_pattern="^SELECT .* FROM products"
+        match_pattern="^SELECT .* FROM `products`"
         cache_ttl=60000
         apply=1
     },
@@ -71,7 +71,7 @@ mysql_query_rules=
     {
         rule_id=2
         active=1
-        match_pattern="^SELECT .* FROM users WHERE id"
+        match_pattern="^SELECT .* FROM `users` WHERE `id` = \\?"
         cache_ttl=30000
         apply=1
     },
@@ -79,7 +79,7 @@ mysql_query_rules=
     {
         rule_id=3
         active=1
-        match_pattern="^SELECT .* FROM orders WHERE stripe_status"
+        match_pattern="^SELECT .* FROM `orders` WHERE `stripe_status` ="
         cache_ttl=0
         apply=1
     },
@@ -87,7 +87,7 @@ mysql_query_rules=
     {
         rule_id=4
         active=1
-        match_pattern="^SELECT .* FROM (sessions|jobs|failed_jobs)"
+        match_pattern="^SELECT .* FROM (`sessions`|`jobs`|`failed_jobs`)"
         cache_ttl=0
         apply=1
     }

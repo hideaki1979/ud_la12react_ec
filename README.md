@@ -20,12 +20,14 @@
 # 1. 環境変数ファイルをコピー
 cp .env.example .env
 
-# 2. .envファイルを編集し、必要な値を設定
-# - DB_PASSWORD
-# - MYSQL_ROOT_PASSWORD
-# - PROXYSQL_ADMIN_PASSWORD
-# - PROXYSQL_MONITOR_PASSWORD
+# 2. .envファイルを編集し、必要な値を設定（必須）
+# - DB_PASSWORD              ※必須: データベース接続用
+# - MYSQL_ROOT_PASSWORD      ※必須: MySQL root パスワード
+# - PROXYSQL_ADMIN_PASSWORD  ※必須: ProxySQL管理用
+# - PROXYSQL_MONITOR_PASSWORD ※必須: ProxySQL監視用（未設定時はエラー）
 # - STRIPE_SECRET, STRIPE_PUBLIC, STRIPE_WEBHOOK_SECRET
+#
+# 注意: PROXYSQL_MONITOR_PASSWORD が未設定の場合、MySQL初期化が失敗します
 
 # 3. Dockerコンテナをビルド・起動
 docker-compose up -d --build
@@ -99,6 +101,16 @@ docker-compose up -d
 
 #### ProxySQL接続エラー
 監視ユーザーが作成されているか確認してください（上記「既存環境へのProxySQL追加」参照）。
+
+#### MySQL初期化エラー（PROXYSQL_MONITOR_PASSWORD must be set）
+`.env`ファイルで`PROXYSQL_MONITOR_PASSWORD`が設定されているか確認してください：
+```bash
+# .envファイルを確認
+grep PROXYSQL_MONITOR_PASSWORD .env
+
+# 設定されていない場合は追加
+echo "PROXYSQL_MONITOR_PASSWORD=your_secure_password" >> .env
+```
 
 ---
 

@@ -20,7 +20,7 @@ services:
 
   # Nginx Web Server
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.28-alpine
     container_name: laravel_nginx
     restart: unless-stopped
     ports:
@@ -35,7 +35,7 @@ services:
 
   # MySQL Database
   mysql:
-    image: mysql:8.0.40
+    image: mysql:8.0.42
     container_name: laravel_mysql
     restart: unless-stopped
     environment:
@@ -69,14 +69,14 @@ services:
 
   # PHPMyAdmin
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2
+    image: phpmyadmin/phpmyadmin:5.2.2
     container_name: laravel_phpmyadmin
     restart: unless-stopped
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_USER: root
-      PMA_PASSWORD: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       UPLOAD_LIMIT: 64M
     ports:
       - "8888:80"
@@ -87,7 +87,7 @@ services:
 
   # Redis Cache Server
   redis:
-    image: redis:7.4-alpine
+    image: redis:7.4.6-alpine
     container_name: laravel_redis
     restart: unless-stopped
     ports:
