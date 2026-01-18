@@ -60,10 +60,13 @@ mysql_users=
 mysql_query_rules=
 (
     # 商品情報のキャッシュ（60秒）
+    # (?i) で大文字小文字を無視
+    # destination_hostgroup でルーティング先を明示（キャッシュに必須）
     {
         rule_id=1
         active=1
-        match_pattern="^SELECT .* FROM `products`"
+        match_pattern="(?i)^SELECT .* FROM `products`"
+        destination_hostgroup=0
         cache_ttl=60000
         apply=1
     },
@@ -71,24 +74,9 @@ mysql_query_rules=
     {
         rule_id=2
         active=1
-        match_pattern="^SELECT .* FROM `users` WHERE `id` = \\?"
+        match_pattern="(?i)^SELECT .* FROM `users` WHERE `id` ="
+        destination_hostgroup=0
         cache_ttl=30000
-        apply=1
-    },
-    # 注文ステータスチェックはキャッシュしない（冪等性のため）
-    {
-        rule_id=3
-        active=1
-        match_pattern="^SELECT .* FROM `orders` WHERE `stripe_status` ="
-        cache_ttl=0
-        apply=1
-    },
-    # セッション・ジョブはキャッシュしない
-    {
-        rule_id=4
-        active=1
-        match_pattern="^SELECT .* FROM (`sessions`|`jobs`|`failed_jobs`)"
-        cache_ttl=0
         apply=1
     }
 )
