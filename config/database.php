@@ -64,6 +64,9 @@ return [
 
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', false),
+                // ProxySQL Query Cache対応: エミュレートモードを有効化
+                // ProxySQLはプリペアドステートメントをキャッシュできないため
+                PDO::ATTR_EMULATE_PREPARES => env('DB_EMULATE_PREPARES', false),
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],

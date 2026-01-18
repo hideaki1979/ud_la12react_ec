@@ -88,7 +88,34 @@ SELECT * FROM stats_mysql_global WHERE Variable_Name LIKE 'Query_Cache%';
 
 # 接続プール状況を確認
 SELECT * FROM stats_mysql_connection_pool;
+
+# クエリルールを確認
+SELECT rule_id, match_pattern, cache_ttl FROM runtime_mysql_query_rules;
 ```
+
+### ProxySQL設定変更の反映
+
+ProxySQLは設定を内部データベース（`proxysql.db`）に永続化します。
+`proxysql.cnf.template` を変更した場合、以下の手順で反映してください：
+
+```bash
+# 1. コンテナを停止
+docker-compose down
+
+# 2. ProxySQLのデータボリュームを削除（MySQL等のデータには影響しません）
+# 注意: `la12react-ec` の部分は実際のプロジェクト名に置き換えてください。
+docker volume rm la12react-ec_proxysql_data
+
+# 3. 再ビルド・起動
+docker-compose up -d --build proxysql
+
+# 4. 設定が反映されたか確認
+docker-compose exec proxysql mysql -h 127.0.0.1 -P 6032 -u admin -p"${PROXYSQL_ADMIN_PASSWORD}" \
+  -e "SELECT rule_id, match_pattern, cache_ttl FROM runtime_mysql_query_rules;"
+```
+
+> **Note**: 通常の再起動（`docker-compose restart proxysql`）では設定変更は反映されません。
+> ボリューム削除が必要です。
 
 ### トラブルシューティング
 
