@@ -152,20 +152,23 @@ export default function OrdersIndex({ orders }: Props) {
 
                             {/* ページネーション */}
                             <div className="flex justify-center mt-6">
-                                {orders.links.map((link, index) => (
-                                    <Link
-                                        key={index}
-                                        href={link.url || '#'}
-                                        className={`px-4 py-2 mx-1 rounded-md ${
-                                            link.active
+                                {orders.links.map((link, index) => {
+                                    const label = link.label
+                                        .replace(/&laquo;/g, '«')
+                                        .replace(/&raquo;/g, '»');
+                                    return (
+                                        <Link
+                                            key={index}
+                                            href={link.url || '#'}
+                                            className={`px-4 py-2 mx-1 rounded-md ${link.active
                                                 ? 'bg-indigo-500 text-white'
                                                 : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                                        } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                        dangerouslySetInnerHTML={{
-                                            __html: DOMPurify.sanitize(link.label),
-                                        }}
-                                    />
-                                ))}
+                                                } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        >
+                                            {label}
+                                        </Link>
+                                    )
+                                })}
                             </div>
                         </div>
                     )}

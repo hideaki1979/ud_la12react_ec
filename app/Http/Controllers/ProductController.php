@@ -38,6 +38,22 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
+        // 価格範囲バリデーション
+        $request->validate([
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    $minPrice = $request->input('min_price');
+                    if ($minPrice !== null && $value !== null && (int) $minPrice > (int) $value) {
+                        $fail('最低価格は最高価格以下にしてください');
+                    }
+                },
+            ],
+        ]);
+
         $query = Product::query()->where('active', false);
 
         // キーワード検索

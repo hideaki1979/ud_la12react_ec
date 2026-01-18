@@ -4,7 +4,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { router } from '@inertiajs/react';
 
@@ -76,8 +76,20 @@ function SearchFilter({ filters, categories }: { filters: ProductFilters; catego
         direction: filters.direction || 'desc',
     });
 
+    // 価格範囲バリデーション
+    const priceValidationError = useMemo(() => {
+        const min = data.min_price ? parseInt(data.min_price, 10) : null;
+        const max = data.max_price ? parseInt(data.max_price, 10) : null;
+
+        if (min !== null && max !== null && min > max) {
+            return '最低価格は最高価格以下にしてください';
+        }
+        return null;
+    }, [data.min_price, data.max_price]);
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        if (priceValidationError) return;
         get(route('products.index'), { preserveState: true });
     };
 
@@ -135,7 +147,11 @@ function SearchFilter({ filters, categories }: { filters: ProductFilters; catego
                             onChange={(e) => setData('min_price', e.target.value)}
                             placeholder="最低"
                             min="0"
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className={`w-full rounded-md shadow-sm focus:ring-indigo-500 ${
+                                priceValidationError
+                                    ? 'border-red-500 focus:border-red-500'
+                                    : 'border-gray-300 focus:border-indigo-500'
+                            }`}
                         />
                         <span className="text-gray-500">〜</span>
                         <input
@@ -144,9 +160,16 @@ function SearchFilter({ filters, categories }: { filters: ProductFilters; catego
                             onChange={(e) => setData('max_price', e.target.value)}
                             placeholder="最高"
                             min="0"
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className={`w-full rounded-md shadow-sm focus:ring-indigo-500 ${
+                                priceValidationError
+                                    ? 'border-red-500 focus:border-red-500'
+                                    : 'border-gray-300 focus:border-indigo-500'
+                            }`}
                         />
                     </div>
+                    {priceValidationError && (
+                        <p className="text-red-500 text-sm mt-1">{priceValidationError}</p>
+                    )}
                 </div>
 
                 {/* 並び替え */}
@@ -183,8 +206,8 @@ function SearchFilter({ filters, categories }: { filters: ProductFilters; catego
                 </button>
                 <button
                     type="submit"
-                    disabled={processing}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                    disabled={processing || !!priceValidationError}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     検索
                 </button>
