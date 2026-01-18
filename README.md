@@ -103,6 +103,7 @@ ProxySQLは設定を内部データベース（`proxysql.db`）に永続化し�
 docker-compose down
 
 # 2. ProxySQLのデータボリュームを削除（MySQL等のデータには影響しません）
+# 注意: `la12react-ec` の部分は実際のプロジェクト名に置き換えてください。
 docker volume rm la12react-ec_proxysql_data
 
 # 3. 再ビルド・起動
