@@ -10,7 +10,7 @@ interface Props {
 export default function OrdersIndex({ orders }: Props) {
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('ja-JP', {
+        return date.toLocaleString('ja-JP', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -52,7 +52,9 @@ export default function OrdersIndex({ orders }: Props) {
                         </span>
                     );
                 default:
-                    return null;
+                    return <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"'>
+                        決済状況が不明です。
+                    </span>;
             }
         }
         return (
