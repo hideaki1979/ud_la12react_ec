@@ -78,5 +78,15 @@ mysql_query_rules=
         destination_hostgroup=0
         cache_ttl=30000
         apply=1
+    },
+    # カテゴリ情報のキャッシュ（300秒）
+    # カテゴリはほぼ変更されないため長めのTTL
+    {
+        rule_id=3
+        active=1
+        match_pattern="(?i)^SELECT .* FROM `categories`"
+        destination_hostgroup=0
+        cache_ttl=300000
+        apply=1
     }
 )

@@ -33,6 +33,18 @@ export default function Authenticated({
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('products.index')}
+                                    active={route().current('products.index')}
+                                >
+                                    商品一覧
+                                </NavLink>
+                                <NavLink
+                                    href={route('orders.index')}
+                                    active={route().current('orders.*')}
+                                >
+                                    注文履歴
+                                </NavLink>
                             </div>
                         </div>
 
@@ -136,6 +148,18 @@ export default function Authenticated({
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('products.index')}
+                            active={route().current('products.index')}
+                        >
+                            商品一覧
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('orders.index')}
+                            active={route().current('orders.*')}
+                        >
+                            注文履歴
                         </ResponsiveNavLink>
                     </div>
 

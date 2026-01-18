@@ -17,4 +17,9 @@ class Product extends Model
         'img',
         'active',
     ];
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class)->withTimestamps();
+    }
 }
