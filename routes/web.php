@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeController;
@@ -25,6 +26,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/checkout/step1', [ProductController::class, 'step1'])->name('checkout.step1');
     Route::post('/checkout/confirm', [ProductController::class, 'confirm'])->name('checkout.confirm');
     Route::get('/checkout/cash-on-delivery', [ProductController::class, 'cashOnDelivery'])->name('checkout.cash-on-delivery');
