@@ -1,31 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-
-interface Product {
-    id: number;
-    name: string;
-    img: string;
-    code: string;
-    price: number;
-}
-
-interface OrderItem {
-    id: number;
-    product_id: number;
-    quantity: number;
-    price: number;
-    product: Product;
-}
-
-interface Order {
-    id: number;
-    user_id: number;
-    payment_method: 'cash_on_delivery' | 'stripe';
-    total_price: number;
-    stripe_status?: string;
-    created_at: string;
-    items: OrderItem[];
-}
+import { Order } from '@/types';
 
 interface Props {
     order: Order;

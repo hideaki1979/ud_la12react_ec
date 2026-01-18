@@ -51,11 +51,11 @@ class ProductController extends Controller
         }
 
         // 価格範囲
-        if ($minPrice = $request->input('min_price')) {
-            $query->where('price', '>=', (int) $minPrice);
+        if ($request->filled('min_price') && is_numeric($request->input('min_price'))) {
+            $query->where('price', '>=', (int) $request->input('min_price'));
         }
-        if ($maxPrice = $request->input('max_price')) {
-            $query->where('price', '<=', (int) $maxPrice);
+        if ($request->filled('max_price') && is_numeric($request->input('max_price'))) {
+            $query->where('price', '<=', (int) $request->input('max_price'));
         }
 
         // ソート

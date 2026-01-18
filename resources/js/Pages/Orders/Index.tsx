@@ -1,49 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
-
-interface Product {
-    id: number;
-    name: string;
-    img: string;
-    code: string;
-}
-
-interface OrderItem {
-    id: number;
-    product_id: number;
-    quantity: number;
-    price: number;
-    product: Product;
-}
-
-interface Order {
-    id: number;
-    payment_method: 'cash_on_delivery' | 'stripe';
-    total_price: number;
-    stripe_status?: string;
-    created_at: string;
-    items: OrderItem[];
-}
-
-interface PaginationLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
-interface PaginatedOrders {
-    data: Order[];
-    links: PaginationLink[];
-    current_page: number;
-    last_page: number;
-    from: number;
-    to: number;
-    total: number;
-}
+import { Order, Paginated } from '@/types';
 
 interface Props {
-    orders: PaginatedOrders;
+    orders: Paginated<Order>;
 }
 
 export default function OrdersIndex({ orders }: Props) {
