@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -35,15 +36,73 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::paginate(15);
-        ['totalPrice' => $totalPrice] = $this->getCartWithTotal();
+        // 価格範囲バリデーション
+        $request->validate([
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    $minPrice = $request->input('min_price');
+                    if ($minPrice !== null && $value !== null && (int) $minPrice > (int) $value) {
+                        $fail('最低価格は最高価格以下にしてください');
+                    }
+                },
+            ],
+        ]);
 
-        return Inertia::render(
-            'Products/Index',
-            ['products' => $products, 'totalPrice' => $totalPrice]
-        );
+        $query = Product::query()->where('active', false);
+
+        // キーワード検索
+        if ($search = $request->input('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        // カテゴリフィルター
+        if ($categoryId = $request->input('category')) {
+            $query->whereHas('categories', fn($q) => $q->where('categories.id', $categoryId));
+        }
+
+        // 価格範囲
+        $query->when($request->input('min_price'), fn($q, $minPrice) => $q->where('price', '>=', $minPrice))
+            ->when($request->input('max_price'), fn($q, $maxPrice) => $q->where('price', '<=', $maxPrice));
+
+        // ソート
+        $sortField = $request->input('sort', 'created_at');
+        $sortDir = $request->input('direction', 'desc');
+
+        // 許可されたソートフィールドのみ
+        $allowedSorts = ['created_at', 'price', 'name'];
+        if (!in_array($sortField, $allowedSorts)) {
+            $sortField = 'created_at';
+        }
+        $sortDir = $sortDir === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sortField, $sortDir);
+
+        $products = $query->paginate(15)->withQueryString();
+        ['cart' => $cart, 'totalPrice' => $totalPrice] = $this->getCartWithTotal();
+
+        // カテゴリ一覧
+        $categories = Category::active()->get(['id', 'name', 'slug']);
+
+        return Inertia::render('Products/Index', [
+            'products' => $products,
+            'cartInfo' => $cart,
+            'totalPrice' => $totalPrice,
+            'categories' => $categories,
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'min_price' => $request->input('min_price', ''),
+                'max_price' => $request->input('max_price', ''),
+                'category' => $request->input('category', ''),
+                'sort' => $sortField,
+                'direction' => $sortDir,
+            ],
+        ]);
     }
 
     public function addToCart(int $id)
