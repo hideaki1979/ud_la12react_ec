@@ -67,12 +67,8 @@ class ProductController extends Controller
         }
 
         // 価格範囲
-        if ($request->filled('min_price') && is_numeric($request->input('min_price'))) {
-            $query->where('price', '>=', (int) $request->input('min_price'));
-        }
-        if ($request->filled('max_price') && is_numeric($request->input('max_price'))) {
-            $query->where('price', '<=', (int) $request->input('max_price'));
-        }
+        $query->when($request->input('min_price'), fn($q, $minPrice) => $q->where('price', '>=', $minPrice))
+            ->when($request->input('max_price'), fn($q, $maxPrice) => $q->where('price', '<=', $maxPrice));
 
         // ソート
         $sortField = $request->input('sort', 'created_at');

@@ -24,7 +24,7 @@ class OrderController extends Controller
     {
         $order = Auth::user()
             ->orders()
-            ->with(['items.product:id,name,img,code,price'])
+            ->with(['items.product:id,name,img,code'])
             ->findOrFail($id);
 
         return Inertia::render('Orders/Show', [

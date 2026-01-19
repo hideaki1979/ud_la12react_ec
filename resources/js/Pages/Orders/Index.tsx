@@ -1,6 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import DOMPurify from 'dompurify';
 import { Order, Paginated } from '@/types';
 
 interface Props {
@@ -52,7 +51,7 @@ export default function OrdersIndex({ orders }: Props) {
                         </span>
                     );
                 default:
-                    return <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"'>
+                    return <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800'>
                         決済状況が不明です。
                     </span>;
             }
